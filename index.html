@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oestereiden Juxturnier 2025</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logos">
+                    <img src="Bilder/VollisderKegel-Logo.png" alt="VollisderKegel Logo" class="logo">
+                    <img src="Bilder/Oestereiden-Logo.png" alt="SUS Oestereiden Logo" class="logo">
+                </div>
+                <h1 class="title">Oestereiden Juxturnier 2025</h1>
+                <div class="tournament-info">
+                    <p><i class="fas fa-calendar"></i> 05. Juli 2025</p>
+                    <p><i class="fas fa-clock"></i> 14:00 - 18:00 Uhr</p>
+                    <p><i class="fas fa-map-marker-alt"></i> Kunstrasenplatz Oestereiden</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <!-- Live-Score Section -->
+            <section class="live-score-section">
+                <h2><i class="fas fa-broadcast-tower"></i> Live-Score</h2>
+                <div id="current-match" class="current-match">
+                    <div class="match-info">
+                        <span id="match-time">--:--</span>
+                        <span id="match-phase">Warte auf Start...</span>
+                    </div>
+                    <div class="teams">
+                        <div class="team">
+                            <span id="team1-name">--</span>
+                            <span id="team1-score">0</span>
+                        </div>
+                        <div class="vs">VS</div>
+                        <div class="team">
+                            <span id="team2-score">0</span>
+                            <span id="team2-name">--</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tournament Progress -->
+            <section class="tournament-progress">
+                <h2><i class="fas fa-trophy"></i> Turnierverlauf</h2>
+                <div class="progress-tabs">
+                    <button class="tab-btn active" data-tab="groups">Vorrunde</button>
+                    <button class="tab-btn" data-tab="knockout">K.O.-Runde</button>
+                    <button class="tab-btn" data-tab="schedule">Spielplan</button>
+                </div>
+
+                <!-- Groups Tab -->
+                <div id="groups" class="tab-content active">
+                    <div class="groups-container">
+                        <div class="group">
+                            <h3>Gruppe A</h3>
+                            <div class="group-table">
+                                <div class="table-header">
+                                    <span>Platz</span>
+                                    <span>Team</span>
+                                    <span>Spiele</span>
+                                    <span>Punkte</span>
+                                    <span>Tordiff.</span>
+                                </div>
+                                <div id="group-a-teams" class="table-body">
+                                    <!-- Teams will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Knockout Tab -->
+                <div id="knockout" class="tab-content">
+                    <div class="knockout-bracket">
+                        <div class="round">
+                            <h3>Achtelfinale</h3>
+                            <div class="matches">
+                                <div class="match" data-match="af1">
+                                    <div class="team" data-team="7">Platz 7</div>
+                                    <div class="score">-</div>
+                                    <div class="team" data-team="10">Platz 10</div>
+                                </div>
+                                <div class="match" data-match="af2">
+                                    <div class="team" data-team="8">Platz 8</div>
+                                    <div class="score">-</div>
+                                    <div class="team" data-team="9">Platz 9</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="round">
+                            <h3>Viertelfinale</h3>
+                            <div class="matches">
+                                <div class="match" data-match="vf1">
+                                    <div class="team" data-team="1">Platz 1</div>
+                                    <div class="score">-</div>
+                                    <div class="team" data-team="af2">Sieger AF2</div>
+                                </div>
+                                <div class="match" data-match="vf2">
+                                    <div class="team" data-team="2">Platz 2</div>
+                                    <div class="score">-</div>
+                                    <div class="team" data-team="af1">Sieger AF1</div>
+                                </div>
+                                <div class="match" data-match="vf3">
+                                    <div class="team" data-team="3">Platz 3</div>
+                                    <div class="score">-</div>
+                                    <div class="team" data-team="6">Platz 6</div>
+                                </div>
+                                <div class="match" data-match="vf4">
+                                    <div class="team" data-team="4">Platz 4</div>
+                                    <div class="score">-</div>
+                                    <div class="team" data-team="5">Platz 5</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="round">
+                            <h3>Halbfinale</h3>
+                            <div class="matches">
+                                <div class="match" data-match="hf1">
+                                    <div class="team" data-team="vf1">Sieger VF1</div>
+                                    <div class="score">-</div>
+                                    <div class="team" data-team="vf4">Sieger VF4</div>
+                                </div>
+                                <div class="match" data-match="hf2">
+                                    <div class="team" data-team="vf2">Sieger VF2</div>
+                                    <div class="score">-</div>
+                                    <div class="team" data-team="vf3">Sieger VF3</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="round">
+                            <h3>Finale</h3>
+                            <div class="matches">
+                                <div class="match final" data-match="final">
+                                    <div class="team" data-team="hf1">Sieger HF1</div>
+                                    <div class="score">-</div>
+                                    <div class="team" data-team="hf2">Sieger HF2</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Schedule Tab -->
+                <div id="schedule" class="tab-content">
+                    <div class="schedule-container">
+                        <div class="schedule-filters">
+                            <button class="filter-btn active" data-filter="all">Alle Spiele</button>
+                            <button class="filter-btn" data-filter="groups">Vorrunde</button>
+                            <button class="filter-btn" data-filter="knockout">K.O.-Runde</button>
+                        </div>
+                        <div id="schedule-list" class="schedule-list">
+                            <!-- Schedule will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tournament Info -->
+            <section class="tournament-info-section">
+                <h2><i class="fas fa-info-circle"></i> Turnierinformationen</h2>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <h3><i class="fas fa-gamepad"></i> Spielregeln</h3>
+                        <ul>
+                            <li>Spieldauer: 8 Minuten</li>
+                            <li>Pause zwischen Spielen: 4 Minuten</li>
+                            <li>Jeder spielt 2 Vorrundenspiele</li>
+                            <li>Alle 10 Teams kommen in die K.O.-Runde</li>
+                        </ul>
+                    </div>
+                    <div class="info-card">
+                        <h3><i class="fas fa-clock"></i> Zeitplan</h3>
+                        <ul>
+                            <li>Start: 14:00 Uhr</li>
+                            <li>Vorrunde: 14:00 - 16:00 Uhr</li>
+                            <li>K.O.-Runde: 16:00 - 18:00 Uhr</li>
+                            <li>Ende: ca. 18:00 Uhr</li>
+                        </ul>
+                    </div>
+                    <div class="info-card">
+                        <h3><i class="fas fa-trophy"></i> Modus</h3>
+                        <ul>
+                            <li>Champions League Format</li>
+                            <li>Gruppenphase + K.O.-Runde</li>
+                            <li>19 Spiele insgesamt</li>
+                            <li>Fairer Modus für alle Teams</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="sponsor-logos">
+                    <img src="Bilder/VollisderKegel-Logo.png" alt="VollisderKegel" class="footer-logo">
+                    <img src="Bilder/Oestereiden-Logo.png" alt="SUS Oestereiden" class="footer-logo">
+                </div>
+                <p>&copy; 2025 Oestereiden Juxturnier - Alle Rechte vorbehalten</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/tournament.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html> 

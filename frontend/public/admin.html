@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Juxturnier 2025</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header" style="background-image: linear-gradient(rgba(30,60,114,0.8), rgba(30,60,114,0.8)), url('Bilder/Sportplatz.jpg');">
+        <div class="header-logos">
+            <img src="Bilder/Oestereiden-Logo.png" alt="Oestereiden Logo" class="logo left">
+            <img src="Bilder/VollisderKegel-Logo.png" alt="VollisderKegel Logo" class="logo right">
+        </div>
+        <h1 class="title">Admin-Bereich</h1>
+        <p class="subtitle">Turnierverwaltung • Passwortgeschützt</p>
+    </header>
+
+    <main class="main">
+        <!-- Login Section -->
+        <section id="login-section" class="live-section">
+            <h2>🔐 Admin-Login</h2>
+            <form id="login-form" class="admin-form">
+                <input type="password" id="admin-password" placeholder="Admin-Passwort" required>
+                <button type="submit">Anmelden</button>
+            </form>
+            <div id="login-error" style="display: none; color: #e74c3c; margin-top: 1rem;"></div>
+        </section>
+
+        <!-- Admin Panel -->
+        <div id="admin-panel" style="display: none;">
+            <!-- Timer Control Section -->
+            <section class="live-section">
+                <h2>⏱️ Timer-Steuerung</h2>
+                <div class="timer-controls">
+                    <div class="timer-display-admin">
+                        <div class="timer-label">AKTUELLE SPIELZEIT</div>
+                        <div class="timer-display" id="admin-timer-display">8:00</div>
+                        <div class="timer-status" id="admin-timer-status">Bereit</div>
+                    </div>
+                    <div class="timer-buttons">
+                        <button id="start-timer-btn" class="btn btn-success">▶️ Start</button>
+                        <button id="pause-timer-btn" class="btn btn-warning">⏸️ Pause</button>
+                        <button id="reset-timer-btn" class="btn btn-danger">🔄 Reset</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Schedule Section -->
+            <section class="live-section">
+                <h2>📅 Spielplan-Verwaltung</h2>
+                <div id="admin-schedule-list" class="loading">Lade Spielplan...</div>
+            </section>
+
+            <!-- Teams Section -->
+            <section class="live-section">
+                <h2>👥 Teams-Verwaltung</h2>
+                <div id="admin-teams-list" class="loading">Lade Teams...</div>
+            </section>
+
+            <!-- Settings Section -->
+            <section class="live-section">
+                <h2>⚙️ Einstellungen</h2>
+                <div class="settings-grid">
+                    <div class="setting-card">
+                        <h3>🔗 Links</h3>
+                        <div class="admin-links">
+                            <a href="index.html" class="btn btn-primary" target="_blank">📺 Live-Ansicht öffnen</a>
+                            <button id="logout-btn" class="btn btn-danger">🚪 Abmelden</button>
+                        </div>
+                    </div>
+                    <div class="setting-card">
+                        <h3>🏆 KO-Phase</h3>
+                        <div class="admin-links">
+                            <button id="update-ko-btn" class="btn btn-warning">🔄 KO-Phase aktualisieren</button>
+                            <p class="setting-description">Aktualisiert die KO-Phase basierend auf den aktuellen Vorrunden-Ergebnissen</p>
+                        </div>
+                    </div>
+                    <div class="setting-card">
+                        <h3>⏱️ Spielzeit</h3>
+                        <form id="spielzeit-form" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <label for="spielzeit-minuten">Spielzeit pro Spiel (Minuten):</label>
+                            <input type="number" id="spielzeit-minuten" min="1" max="60" value="8" style="width: 80px;">
+                            <button type="submit" class="btn btn-primary">Speichern</button>
+                            <span id="spielzeit-success" style="display:none;color:green;font-size:0.9em;">Gespeichert!</span>
+                        </form>
+                        <p class="setting-description">Hier kannst du die Spielzeit für alle Spiele zentral anpassen. Änderungen wirken sich auf Spielplan und Timer aus.</p>
+                    </div>
+                    <div class="setting-card">
+                        <h3>⏸️ Pausenzeit</h3>
+                        <form id="pausenzeit-form" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <label for="pausenzeit-minuten">Pausenzeit zwischen Spielen (Minuten):</label>
+                            <input type="number" id="pausenzeit-minuten" min="1" max="60" value="4" style="width: 80px;">
+                            <button type="submit" class="btn btn-primary">Speichern</button>
+                            <span id="pausenzeit-success" style="display:none;color:green;font-size:0.9em;">Gespeichert!</span>
+                        </form>
+                        <p class="setting-description">Hier kannst du die Pausenzeit zwischen den Spielen zentral anpassen. Änderungen wirken sich auf den Spielplan aus.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2025 Juxturnier Oestereiden &nbsp;|&nbsp; <a href="impressum.html" style="color:#fff;text-decoration:underline;">Impressum</a></p>
+            <div class="admin-links">
+                <a href="index.html" class="admin-link">Zurück zur Live-Ansicht</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/admin.js"></script>
+</body>
+</html> 

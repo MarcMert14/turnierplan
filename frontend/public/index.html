@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juxturnier 2025 - Oestereiden</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Live Timer -->
+    <div class="live-timer">
+        <div class="timer-container">
+            <div class="timer-label">SPIELZEIT</div>
+            <div class="timer-display" id="timer-display">8:00</div>
+            <div class="timer-status" id="timer-status">Bereit</div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header" style="background-image: linear-gradient(rgba(30,60,114,0.8), rgba(30,60,114,0.8)), url('Bilder/Sportplatz.jpg');">
+        <div class="header-logos">
+            <img src="Bilder/Oestereiden-Logo.png" alt="Oestereiden Logo" class="logo left">
+            <img src="Bilder/VollisderKegel-Logo.png" alt="VollisderKegel Logo" class="logo right">
+        </div>
+        <h1 class="title">Juxturnier 2025</h1>
+        <p class="subtitle">05. Juli 2025 • Oestereiden</p>
+    </header>
+
+    <main class="main">
+        <!-- Live Match Info Section -->
+        <section class="live-section">
+            <h2>🎯 Aktuelles Spiel</h2>
+            <div id="current-match" class="loading">Lade...</div>
+        </section>
+
+        <!-- Next Match Section -->
+        <section class="live-section">
+            <h2>⏭️ Nächstes Spiel</h2>
+            <div id="next-match" class="loading">Lade...</div>
+        </section>
+
+        <!-- Tournament Progress -->
+        <section class="live-section">
+            <h2>📊 Turnierverlauf</h2>
+            <div class="progress-tabs">
+                <button class="tab-btn active" data-tab="schedule">Spielplan</button>
+                <button class="tab-btn" data-tab="standings">Tabelle</button>
+            </div>
+            
+            <div class="tab-content active" id="schedule">
+                <div id="schedule-list" class="loading">Lade Spielplan...</div>
+            </div>
+            
+            <div class="tab-content" id="standings">
+                <div id="standings-table" class="loading">Lade Tabelle...</div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2025 Juxturnier Oestereiden &nbsp;|&nbsp; <a href="impressum.html" style="color:#fff;text-decoration:underline;">Impressum</a></p>
+            <div class="admin-links">
+                <a href="admin.html" class="admin-link">Admin-Bereich</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html> 

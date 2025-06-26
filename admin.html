@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Oestereiden Juxturnier 2025</title>
+    <link rel="stylesheet" href="css/admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="admin-header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logos">
+                    <img src="Bilder/VollisderKegel-Logo.png" alt="VollisderKegel Logo" class="logo">
+                    <img src="Bilder/Oestereiden-Logo.png" alt="SUS Oestereiden Logo" class="logo">
+                </div>
+                <h1 class="title">Admin-Panel</h1>
+                <div class="admin-info">
+                    <p><i class="fas fa-user-shield"></i> Turnierverwaltung</p>
+                    <p><i class="fas fa-calendar"></i> 05. Juli 2025</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="admin-main">
+        <div class="container">
+            <!-- Admin Navigation -->
+            <nav class="admin-nav">
+                <button class="nav-btn active" data-section="matches">Spielstände</button>
+                <button class="nav-btn" data-section="schedule">Spielplan</button>
+                <button class="nav-btn" data-section="teams">Teams</button>
+                <button class="nav-btn" data-section="settings">Einstellungen</button>
+            </nav>
+
+            <!-- Spielstände Section -->
+            <section id="matches" class="admin-section active">
+                <h2><i class="fas fa-futbol"></i> Spielstände verwalten</h2>
+                
+                <div class="matches-grid">
+                    <div class="match-card">
+                        <h3>Vorrunde</h3>
+                        <div id="group-matches" class="matches-list">
+                            <!-- Wird durch JavaScript gefüllt -->
+                        </div>
+                    </div>
+                    
+                    <div class="match-card">
+                        <h3>K.O.-Runde</h3>
+                        <div id="knockout-matches" class="matches-list">
+                            <!-- Wird durch JavaScript gefüllt -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Spielplan Section -->
+            <section id="schedule" class="admin-section">
+                <h2><i class="fas fa-calendar-alt"></i> Spielplan bearbeiten</h2>
+                
+                <div class="schedule-controls">
+                    <button class="btn btn-primary" id="add-delay">
+                        <i class="fas fa-clock"></i> Verzögerung hinzufügen
+                    </button>
+                    <button class="btn btn-secondary" id="reset-schedule">
+                        <i class="fas fa-undo"></i> Spielplan zurücksetzen
+                    </button>
+                </div>
+                
+                <div class="schedule-timeline">
+                    <div id="schedule-timeline" class="timeline">
+                        <!-- Wird durch JavaScript gefüllt -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Teams Section -->
+            <section id="teams" class="admin-section">
+                <h2><i class="fas fa-users"></i> Teams verwalten</h2>
+                
+                <div class="teams-management">
+                    <div class="teams-list">
+                        <h3>Aktuelle Teams</h3>
+                        <div id="teams-list" class="teams-grid">
+                            <!-- Wird durch JavaScript gefüllt -->
+                        </div>
+                    </div>
+                    
+                    <div class="team-actions">
+                        <h3>Team hinzufügen</h3>
+                        <form id="add-team-form" class="team-form">
+                            <input type="text" id="new-team-name" placeholder="Team-Name" required>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Hinzufügen
+                            </button>
+                        </form>
+                        <hr style="margin: 1.5rem 0;">
+                        <button class="btn btn-secondary" id="import-teams-excel">
+                            <i class="fas fa-file-excel"></i> Teams aus Excel importieren
+                        </button>
+                        <input type="file" id="excel-file-input" accept=".xlsx,.xls" style="display:none;">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Einstellungen Section -->
+            <section id="settings" class="admin-section">
+                <h2><i class="fas fa-cog"></i> Turnier-Einstellungen</h2>
+                
+                <div class="settings-grid">
+                    <div class="setting-card">
+                        <h3>Spielzeiten</h3>
+                        <form id="time-settings" class="settings-form">
+                            <div class="form-group">
+                                <label for="game-duration">Spieldauer (Minuten)</label>
+                                <input type="number" id="game-duration" value="8" min="1" max="30">
+                            </div>
+                            <div class="form-group">
+                                <label for="break-duration">Pause zwischen Spielen (Minuten)</label>
+                                <input type="number" id="break-duration" value="4" min="0" max="15">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Speichern</button>
+                        </form>
+                    </div>
+                    
+                    <div class="setting-card">
+                        <h3>Turnier-Status</h3>
+                        <div class="status-controls">
+                            <button class="btn btn-success" id="start-tournament">
+                                <i class="fas fa-play"></i> Turnier starten
+                            </button>
+                            <button class="btn btn-warning" id="pause-tournament">
+                                <i class="fas fa-pause"></i> Pausieren
+                            </button>
+                            <button class="btn btn-danger" id="reset-tournament">
+                                <i class="fas fa-stop"></i> Zurücksetzen
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-card">
+                        <h3>Export/Import</h3>
+                        <div class="export-controls">
+                            <button class="btn btn-secondary" id="export-data">
+                                <i class="fas fa-download"></i> Daten exportieren
+                            </button>
+                            <button class="btn btn-secondary" id="import-data">
+                                <i class="fas fa-upload"></i> Daten importieren
+                            </button>
+                            <input type="file" id="import-file" accept=".json" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Score Input Modal -->
+    <div id="score-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Spielstand eintragen</h3>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="score-form">
+                    <div class="score-inputs">
+                        <div class="team-score">
+                            <label id="team1-label">Team 1</label>
+                            <input type="number" id="team1-score" min="0" max="99" value="0">
+                        </div>
+                        <div class="vs">VS</div>
+                        <div class="team-score">
+                            <label id="team2-label">Team 2</label>
+                            <input type="number" id="team2-score" min="0" max="99" value="0">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Speichern</button>
+                        <button type="button" class="btn btn-secondary" id="cancel-score">Abbrechen</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delay Input Modal -->
+    <div id="delay-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Verzögerung hinzufügen</h3>
+                <button class="close-btn" id="close-delay-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="delay-form">
+                    <div class="form-group">
+                        <label for="delay-minutes">Verzögerung in Minuten</label>
+                        <input type="number" id="delay-minutes" min="1" max="60" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label for="delay-reason">Grund (optional)</label>
+                        <textarea id="delay-reason" placeholder="z.B. Verletzung, Wetter, etc."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Verzögerung hinzufügen</button>
+                        <button type="button" class="btn btn-secondary" id="cancel-delay">Abbrechen</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="admin-footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2025 Oestereiden Juxturnier - Admin-Panel</p>
+                <div class="admin-links">
+                    <a href="index.html" class="btn btn-secondary">
+                        <i class="fas fa-eye"></i> Öffentliche Ansicht
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/tournament.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html> 

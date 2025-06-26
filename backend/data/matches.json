@@ -10,7 +10,7 @@
       "score2": null,
       "status": "geplant",
       "startTime": "14:00",
-      "endTime": "14:10"
+      "endTime": "14:08"
     },
     {
       "id": "v2",
@@ -21,8 +21,8 @@
       "score1": null,
       "score2": null,
       "status": "geplant",
-      "startTime": "14:14",
-      "endTime": "14:24"
+      "startTime": "14:12",
+      "endTime": "14:20"
     },
     {
       "id": "v3",
@@ -33,8 +33,8 @@
       "score1": null,
       "score2": null,
       "status": "geplant",
-      "startTime": "14:28",
-      "endTime": "14:38"
+      "startTime": "14:24",
+      "endTime": "14:32"
     },
     {
       "id": "v4",
@@ -45,8 +45,8 @@
       "score1": null,
       "score2": null,
       "status": "geplant",
-      "startTime": "14:42",
-      "endTime": "14:52"
+      "startTime": "14:36",
+      "endTime": "14:44"
     },
     {
       "id": "v5",
@@ -57,8 +57,8 @@
       "score1": null,
       "score2": null,
       "status": "geplant",
-      "startTime": "14:56",
-      "endTime": "15:06"
+      "startTime": "14:48",
+      "endTime": "14:56"
     },
     {
       "id": "v6",
@@ -69,8 +69,8 @@
       "score1": null,
       "score2": null,
       "status": "geplant",
-      "startTime": "15:10",
-      "endTime": "15:20"
+      "startTime": "15:00",
+      "endTime": "15:08"
     },
     {
       "id": "v7",
@@ -81,8 +81,8 @@
       "score1": null,
       "score2": null,
       "status": "geplant",
-      "startTime": "15:24",
-      "endTime": "15:34"
+      "startTime": "15:12",
+      "endTime": "15:20"
     },
     {
       "id": "v8",
@@ -93,8 +93,8 @@
       "score1": null,
       "score2": null,
       "status": "geplant",
-      "startTime": "15:38",
-      "endTime": "15:48"
+      "startTime": "15:24",
+      "endTime": "15:32"
     },
     {
       "id": "v9",
@@ -105,8 +105,8 @@
       "score1": null,
       "score2": null,
       "status": "geplant",
-      "startTime": "15:52",
-      "endTime": "16:02"
+      "startTime": "15:36",
+      "endTime": "15:44"
     },
     {
       "id": "v10",
@@ -117,8 +117,8 @@
       "score1": null,
       "score2": null,
       "status": "geplant",
-      "startTime": "16:06",
-      "endTime": "16:16"
+      "startTime": "15:48",
+      "endTime": "15:56"
     }
   ],
   "ko": [
@@ -129,8 +129,8 @@
       "team1": "",
       "team2": "",
       "status": "pause",
-      "startTime": "16:16",
-      "endTime": "16:36",
+      "startTime": "15:56",
+      "endTime": "16:16",
       "pauseDuration": 20
     },
     {
@@ -142,8 +142,8 @@
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "16:36",
-      "endTime": "16:46"
+      "startTime": "16:16",
+      "endTime": "16:24"
     },
     {
       "id": "AF2",
@@ -154,8 +154,8 @@
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "16:50",
-      "endTime": "17:00"
+      "startTime": "16:28",
+      "endTime": "16:36"
     },
     {
       "id": "VF1",
@@ -166,8 +166,8 @@
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "17:04",
-      "endTime": "17:14"
+      "startTime": "16:40",
+      "endTime": "16:48"
     },
     {
       "id": "VF2",
@@ -178,8 +178,8 @@
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "17:18",
-      "endTime": "17:28"
+      "startTime": "16:52",
+      "endTime": "17:00"
     },
     {
       "id": "VF3",
@@ -190,8 +190,8 @@
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "17:32",
-      "endTime": "17:42"
+      "startTime": "17:04",
+      "endTime": "17:12"
     },
     {
       "id": "VF4",
@@ -202,8 +202,8 @@
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "17:46",
-      "endTime": "17:56"
+      "startTime": "17:16",
+      "endTime": "17:24"
     },
     {
       "id": "pause2",
@@ -212,8 +212,8 @@
       "team1": "",
       "team2": "",
       "status": "pause",
-      "startTime": "17:56",
-      "endTime": "18:06",
+      "startTime": "17:24",
+      "endTime": "17:34",
       "pauseDuration": 10
     },
     {
@@ -225,8 +225,8 @@
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "18:06",
-      "endTime": "18:16"
+      "startTime": "17:34",
+      "endTime": "17:42"
     },
     {
       "id": "HF2",
@@ -237,8 +237,8 @@
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "18:20",
-      "endTime": "18:30"
+      "startTime": "17:46",
+      "endTime": "17:54"
     },
     {
       "id": "pause3",
@@ -247,8 +247,8 @@
       "team1": "",
       "team2": "",
       "status": "pause",
-      "startTime": "18:30",
-      "endTime": "18:40",
+      "startTime": "17:54",
+      "endTime": "18:04",
       "pauseDuration": 10
     },
     {
@@ -260,8 +260,8 @@
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "18:40",
-      "endTime": "18:50"
+      "startTime": "18:04",
+      "endTime": "18:12"
     }
   ]
 }

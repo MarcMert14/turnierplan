@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3001/api';
+const API_URL = 'https://turnierplan-backend.onrender.com/api';
 let adminToken = localStorage.getItem('adminToken') || '';
 
 // Timer-Variablen

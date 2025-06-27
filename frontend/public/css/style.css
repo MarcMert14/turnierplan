@@ -195,9 +195,17 @@ main {
     font-weight: 400;
 }
 .schedule-list .match .teams {
+    order: 2;
+    flex: 1;
+    font-size: 1rem;
     font-weight: 500;
     color: #1e3c72;
-    font-size: 1rem;
+    margin: 0;
+    word-wrap: break-word;
+    hyphens: auto;
+    line-height: 1.3;
+    padding: 0.3rem 0;
+    text-align: center;
 }
 .schedule-list .match .score {
     font-size: 1.1rem;
@@ -227,9 +235,8 @@ main {
     
     .schedule-list .match {
         display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
+        flex-direction: column;
+        align-items: stretch;
         gap: 0.5rem;
         padding: 0.8rem;
         margin-bottom: 0.5rem;
@@ -239,8 +246,10 @@ main {
     
     .schedule-list .match .match-header {
         order: 1;
-        flex-shrink: 0;
-        min-width: 60px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.3rem;
     }
     
     .schedule-list .match .match-id {
@@ -259,12 +268,15 @@ main {
     .schedule-list .match .teams {
         order: 2;
         flex: 1;
-        font-size: 0.9rem;
+        font-size: 1rem;
         font-weight: 500;
         color: #1e3c72;
         margin: 0;
         word-wrap: break-word;
         hyphens: auto;
+        line-height: 1.3;
+        padding: 0.3rem 0;
+        text-align: center;
     }
     
     .schedule-list .match .score {
@@ -295,7 +307,7 @@ main {
     /* Automatische Schriftgrößenanpassung bei Überlappung */
     @media (max-width: 480px) {
         .schedule-list .match .teams {
-            font-size: 0.8rem;
+            font-size: 0.9rem;
         }
         
         .schedule-list .match .score {
@@ -309,7 +321,7 @@ main {
     
     @media (max-width: 400px) {
         .schedule-list .match .teams {
-            font-size: 0.7rem;
+            font-size: 0.85rem;
         }
         
         .schedule-list .match .match-header {
@@ -332,7 +344,7 @@ main {
         }
         
         .schedule-list .match .teams {
-            font-size: 0.65rem;
+            font-size: 0.8rem;
         }
         
         .schedule-list .match .score {

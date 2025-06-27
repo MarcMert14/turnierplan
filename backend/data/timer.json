@@ -1,6 +1,6 @@
 {
-  "isRunning": true,
+  "isRunning": false,
   "timeLeft": 480,
-  "startTime": 1750946167048,
+  "startTime": null,
   "pausedTime": null
 }

@@ -430,7 +430,6 @@ function displayCurrentAndNextMatch(matches, teams = []) {
             currentMatchEl.innerHTML = `
                 <div class="match-info ${statusClass}">
                     <div class="match-header">
-                        <div class="match-id">${currentMatch.id}</div>
                         <div class="match-round">${currentMatch.round || 'Vorrunde'}</div>
                     </div>
                     <div class="match-teams">
@@ -456,7 +455,6 @@ function displayCurrentAndNextMatch(matches, teams = []) {
             nextMatchEl.innerHTML = `
                 <div class="match-info next">
                     <div class="match-header">
-                        <div class="match-id">${nextMatch.id}</div>
                         <div class="match-round">${nextMatch.round || 'Vorrunde'}</div>
                     </div>
                     <div class="match-teams">

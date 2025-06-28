@@ -353,37 +353,29 @@ async function generateMatches(teams) {
         // 2 Gruppen à 4 Teams
         const gruppen = [teams.slice(0, 4), teams.slice(4, 8)];
         const gruppenNamen = ['A', 'B'];
-        // Alle Gruppenspiele vorbereiten
-        let spieleA = [], spieleB = [];
-        // Erst alle A-Paarungen
-        for (let i = 0; i < 4; i++) {
-            for (let j = i + 1; j < 4; j++) {
-                spieleA.push({ gruppe: 'A', team1: gruppen[0][i].name, team2: gruppen[0][j].name });
-            }
+        // Round-Robin-Paarungen für 4 Teams (ergibt 3 Spieltage à 2 Spiele pro Gruppe)
+        function roundRobinBlockOrder(gruppe, teams) {
+            // Für 4 Teams: 3 Spieltage, je 2 Spiele pro Spieltag
+            // Spieltage:
+            // 1: Team 1 vs Team 4, Team 2 vs Team 3
+            // 2: Team 1 vs Team 3, Team 4 vs Team 2
+            // 3: Team 1 vs Team 2, Team 3 vs Team 4
+            return [
+                [ { gruppe, team1: teams[0].name, team2: teams[3].name }, { gruppe, team1: teams[1].name, team2: teams[2].name } ],
+                [ { gruppe, team1: teams[0].name, team2: teams[2].name }, { gruppe, team1: teams[3].name, team2: teams[1].name } ],
+                [ { gruppe, team1: teams[0].name, team2: teams[1].name }, { gruppe, team1: teams[2].name, team2: teams[3].name } ]
+            ];
         }
-        // Dann alle B-Paarungen
-        for (let i = 0; i < 4; i++) {
-            for (let j = i + 1; j < 4; j++) {
-                spieleB.push({ gruppe: 'B', team1: gruppen[1][i].name, team2: gruppen[1][j].name });
-            }
-        }
-        // Blockweise: immer 2x A, dann 2x B, dann wieder 2x A, 2x B ...
+        const blocksA = roundRobinBlockOrder('A', gruppen[0]); // 3 Blöcke à 2 Spiele
+        const blocksB = roundRobinBlockOrder('B', gruppen[1]);
+        // Jetzt AABB-Muster blockweise zusammenfügen
         let vorrundenSpiele = [];
-        let blockCount = Math.ceil(spieleA.length / 2); // 6 Spiele pro Gruppe, also 3 Blöcke
-        for (let block = 0; block < blockCount; block++) {
-            // 2x A
-            for (let k = 0; k < 2; k++) {
-                let idx = block * 2 + k;
-                if (idx < spieleA.length) vorrundenSpiele.push(spieleA[idx]);
-            }
-            // 2x B
-            for (let k = 0; k < 2; k++) {
-                let idx = block * 2 + k;
-                if (idx < spieleB.length) vorrundenSpiele.push(spieleB[idx]);
-            }
+        for (let i = 0; i < 3; i++) {
+            vorrundenSpiele.push(...blocksA[i]);
+            vorrundenSpiele.push(...blocksB[i]);
         }
         // Debug-Ausgabe
-        console.log('Vorrunden-Spiele (AABB):', vorrundenSpiele.map(s => s.gruppe + ': ' + s.team1 + ' vs ' + s.team2));
+        console.log('Vorrunden-Spiele (AABB, kein Team doppelt im Block):', vorrundenSpiele.map(s => s.gruppe + ': ' + s.team1 + ' vs ' + s.team2));
         vorrundenSpiele.forEach((spiel, idx) => {
             const matchStart = new Date(currentTime.getTime() + idx * 12 * 60 * 1000);
             const matchEnd = new Date(matchStart.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
@@ -417,7 +409,7 @@ async function generateMatches(teams) {
             id: 'HF1', phase: 'ko', round: 'Halbfinale 1',
             team1: '1. Gruppe A', team2: '2. Gruppe B',
             score1: null, score2: null, status: 'wartend',
-            startTime: `${hf1Start.getHours().toString().padStart(2, '0')}:${hf1Start.getMinutes().toString().padStart(2, '0')}`,
+            startTime: `${hf1Start.getHours().toString().padStart(2, '0')}:${hf1End.getMinutes().toString().padStart(2, '0')}`,
             endTime: `${hf1End.getHours().toString().padStart(2, '0')}:${hf1End.getMinutes().toString().padStart(2, '0')}`
         });
         currentTime = new Date(hf1End.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
@@ -428,7 +420,7 @@ async function generateMatches(teams) {
             id: 'HF2', phase: 'ko', round: 'Halbfinale 2',
             team1: '1. Gruppe B', team2: '2. Gruppe A',
             score1: null, score2: null, status: 'wartend',
-            startTime: `${hf2Start.getHours().toString().padStart(2, '0')}:${hf2Start.getMinutes().toString().padStart(2, '0')}`,
+            startTime: `${hf2Start.getHours().toString().padStart(2, '0')}:${hf2End.getMinutes().toString().padStart(2, '0')}`,
             endTime: `${hf2End.getHours().toString().padStart(2, '0')}:${hf2End.getMinutes().toString().padStart(2, '0')}`
         });
         currentTime = new Date(hf2End.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
@@ -744,7 +736,34 @@ async function updateKOMatches(standings) {
     let matches = await fs.readJson(MATCHES_JSON).catch(() => ({ vorrunde: [], ko: [] }));
     const teams = await fs.readJson(TEAMS_JSON).catch(() => []);
     if (teams.length === 8 && standings && typeof standings === 'object' && !Array.isArray(standings)) {
-        // ... wie gehabt ...
+        // Prüfe, ob alle Gruppenspiele abgeschlossen sind
+        const gruppen = Object.keys(standings);
+        let allGroupsCompleted = gruppen.every(gruppe => {
+            const groupMatches = (matches.vorrunde || []).filter(m => m.round && m.round.includes(gruppe));
+            return groupMatches.every(m => m.status === 'completed');
+        });
+        if (allGroupsCompleted) {
+            // Setze die Teams für die KO-Spiele
+            const gruppeA = standings['A'];
+            const gruppeB = standings['B'];
+            // Sortierung ist bereits korrekt (nach Punkten, Tordifferenz, Tore, Name)
+            const HF1 = matches.ko.find(m => m.id === 'HF1');
+            const HF2 = matches.ko.find(m => m.id === 'HF2');
+            const F1 = matches.ko.find(m => m.id === 'F1');
+            if (HF1) {
+                HF1.team1 = gruppeA[0]?.name || '1. Gruppe A';
+                HF1.team2 = gruppeB[1]?.name || '2. Gruppe B';
+            }
+            if (HF2) {
+                HF2.team1 = gruppeB[0]?.name || '1. Gruppe B';
+                HF2.team2 = gruppeA[1]?.name || '2. Gruppe A';
+            }
+            if (F1) {
+                F1.team1 = 'Sieger HF1';
+                F1.team2 = 'Sieger HF2';
+            }
+            await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+        }
         return;
     }
     if (teams.length === 9 && standings && typeof standings === 'object' && !Array.isArray(standings)) {

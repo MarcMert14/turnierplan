@@ -1,54 +1,6 @@
 {
   "vorrunde": [
     {
-      "id": "gA_Saufsocken_vs_FC Siewillja",
-      "phase": "vorrunde",
-      "round": "Gruppe A",
-      "team1": "Saufsocken",
-      "team2": "FC Siewillja",
-      "score1": null,
-      "score2": null,
-      "status": "geplant",
-      "startTime": "14:00",
-      "endTime": "14:08"
-    },
-    {
-      "id": "gA_Saufsocken_vs_Pegelclub",
-      "phase": "vorrunde",
-      "round": "Gruppe A",
-      "team1": "Saufsocken",
-      "team2": "Pegelclub",
-      "score1": null,
-      "score2": null,
-      "status": "geplant",
-      "startTime": "14:12",
-      "endTime": "14:20"
-    },
-    {
-      "id": "gB_SW Bier_vs_Bauwagen",
-      "phase": "vorrunde",
-      "round": "Gruppe B",
-      "team1": "SW Bier",
-      "team2": "Bauwagen",
-      "score1": null,
-      "score2": null,
-      "status": "geplant",
-      "startTime": "14:24",
-      "endTime": "14:32"
-    },
-    {
-      "id": "gB_SW Bier_vs_SWO Allstars",
-      "phase": "vorrunde",
-      "round": "Gruppe B",
-      "team1": "SW Bier",
-      "team2": "SWO Allstars",
-      "score1": null,
-      "score2": null,
-      "status": "geplant",
-      "startTime": "14:36",
-      "endTime": "14:44"
-    },
-    {
       "id": "gA_Saufsocken_vs_Inter National",
       "phase": "vorrunde",
       "round": "Gruppe A",
@@ -57,8 +9,8 @@
       "score1": null,
       "score2": null,
       "status": "geplant",
-      "startTime": "14:48",
-      "endTime": "14:56"
+      "startTime": "14:00",
+      "endTime": "14:08"
     },
     {
       "id": "gA_FC Siewillja_vs_Pegelclub",
@@ -69,8 +21,8 @@
       "score1": null,
       "score2": null,
       "status": "geplant",
-      "startTime": "15:00",
-      "endTime": "15:08"
+      "startTime": "14:12",
+      "endTime": "14:20"
     },
     {
       "id": "gB_SW Bier_vs_Landjugend Schmerlecke",
@@ -81,8 +33,8 @@
       "score1": null,
       "score2": null,
       "status": "geplant",
-      "startTime": "15:12",
-      "endTime": "15:20"
+      "startTime": "14:24",
+      "endTime": "14:32"
     },
     {
       "id": "gB_Bauwagen_vs_SWO Allstars",
@@ -93,15 +45,63 @@
       "score1": null,
       "score2": null,
       "status": "geplant",
+      "startTime": "14:36",
+      "endTime": "14:44"
+    },
+    {
+      "id": "gA_Saufsocken_vs_Pegelclub",
+      "phase": "vorrunde",
+      "round": "Gruppe A",
+      "team1": "Saufsocken",
+      "team2": "Pegelclub",
+      "score1": null,
+      "score2": null,
+      "status": "geplant",
+      "startTime": "14:48",
+      "endTime": "14:56"
+    },
+    {
+      "id": "gA_Inter National_vs_FC Siewillja",
+      "phase": "vorrunde",
+      "round": "Gruppe A",
+      "team1": "Inter National",
+      "team2": "FC Siewillja",
+      "score1": null,
+      "score2": null,
+      "status": "geplant",
+      "startTime": "15:00",
+      "endTime": "15:08"
+    },
+    {
+      "id": "gB_SW Bier_vs_SWO Allstars",
+      "phase": "vorrunde",
+      "round": "Gruppe B",
+      "team1": "SW Bier",
+      "team2": "SWO Allstars",
+      "score1": null,
+      "score2": null,
+      "status": "geplant",
+      "startTime": "15:12",
+      "endTime": "15:20"
+    },
+    {
+      "id": "gB_Landjugend Schmerlecke_vs_Bauwagen",
+      "phase": "vorrunde",
+      "round": "Gruppe B",
+      "team1": "Landjugend Schmerlecke",
+      "team2": "Bauwagen",
+      "score1": null,
+      "score2": null,
+      "status": "geplant",
       "startTime": "15:24",
       "endTime": "15:32"
     },
     {
-      "id": "gA_FC Siewillja_vs_Inter National",
+      "id": "gA_Saufsocken_vs_FC Siewillja",
       "phase": "vorrunde",
       "round": "Gruppe A",
-      "team1": "FC Siewillja",
-      "team2": "Inter National",
+      "team1": "Saufsocken",
+      "team2": "FC Siewillja",
       "score1": null,
       "score2": null,
       "status": "geplant",
@@ -121,11 +121,11 @@
       "endTime": "15:56"
     },
     {
-      "id": "gB_Bauwagen_vs_Landjugend Schmerlecke",
+      "id": "gB_SW Bier_vs_Bauwagen",
       "phase": "vorrunde",
       "round": "Gruppe B",
-      "team1": "Bauwagen",
-      "team2": "Landjugend Schmerlecke",
+      "team1": "SW Bier",
+      "team2": "Bauwagen",
       "score1": null,
       "score2": null,
       "status": "geplant",
@@ -166,7 +166,7 @@
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "16:44",
+      "startTime": "16:52",
       "endTime": "16:52"
     },
     {
@@ -178,7 +178,7 @@
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "16:56",
+      "startTime": "16:04",
       "endTime": "17:04"
     },
     {

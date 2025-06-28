@@ -274,20 +274,15 @@ async function generateMatches(teams) {
             }
             gruppenSpiele.push(spiele);
         });
-        // Alle Gruppenspiele in ein Array
-        let alleSpiele = [...gruppenSpiele[0], ...gruppenSpiele[1], ...gruppenSpiele[2]];
-        // Optimiertes Scheduling: Kein Team spielt zweimal hintereinander
+        // ABCABCABC: Immer ein Spiel aus A, dann B, dann C, dann wieder A, B, C ...
         let vorrundenSpiele = [];
-        let letzteTeams = new Set();
-        while (alleSpiele.length > 0) {
-            let idx = alleSpiele.findIndex(spiel =>
-                !letzteTeams.has(spiel.team1) && !letzteTeams.has(spiel.team2)
-            );
-            if (idx === -1) idx = 0; // Falls nicht möglich, nimm das erste
-            const spiel = alleSpiele.splice(idx, 1)[0];
-            vorrundenSpiele.push(spiel);
-            letzteTeams = new Set([spiel.team1, spiel.team2]);
+        for (let r = 0; r < 3; r++) { // 3 Runden pro Gruppe
+            for (let g = 0; g < 3; g++) { // 3 Gruppen
+                if (gruppenSpiele[g][r]) vorrundenSpiele.push(gruppenSpiele[g][r]);
+            }
         }
+        // Debug-Ausgabe
+        console.log('Vorrunden-Spiele (ABCABCABC):', vorrundenSpiele.map(s => s.gruppe + ': ' + s.team1 + ' vs ' + s.team2));
         vorrundenSpiele.forEach((spiel, idx) => {
             const matchStart = new Date(currentTime.getTime() + idx * 12 * 60 * 1000);
             const matchEnd = new Date(matchStart.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);

@@ -357,6 +357,12 @@ main {
             min-width: 70px;
         }
     }
+    
+    .schedule-list .match > span {
+        text-align: center !important;
+        display: block;
+        width: 100%;
+    }
 }
 
 .schedule-list .match.live {

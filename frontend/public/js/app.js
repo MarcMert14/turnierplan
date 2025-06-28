@@ -177,6 +177,7 @@ function displaySchedule(matches, teams = []) {
             } else if (match.id && match.id.startsWith('v')) {
                 gruppenLabel = match.id;
             }
+            // Desktop-Ansicht: Spalten korrekt zuordnen
             div.innerHTML = `
                 <span class="match-header">
                     <div class="match-id">${gruppenLabel}</div>

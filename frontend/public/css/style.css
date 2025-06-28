@@ -158,7 +158,7 @@ main {
 }
 .schedule-list .header {
     display: grid;
-    grid-template-columns: 1fr 2fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 2.5fr 1fr 1.2fr 1.2fr;
     font-weight: 600;
     color: #1e3c72;
     background: #f8faff;
@@ -169,7 +169,7 @@ main {
 }
 .schedule-list .match {
     display: grid;
-    grid-template-columns: 1fr 2fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 2.5fr 1fr 1.2fr 1.2fr;
     align-items: center;
     gap: 0.5rem;
     background: #f8faff;

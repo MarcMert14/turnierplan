@@ -177,16 +177,13 @@ function displaySchedule(matches, teams = []) {
             } else if (match.id && match.id.startsWith('v')) {
                 gruppenLabel = match.id;
             }
-            // Desktop-Ansicht: Spalten korrekt zuordnen
+            // Desktop-Ansicht: Spalten exakt wie Header
             div.innerHTML = `
-                <span class="match-header">
-                    <div class="match-id">${gruppenLabel}</div>
-                    <div class="match-round">${match.round || 'Vorrunde'}</div>
-                </span>
-                <span class="teams">${getTeamName(match.team1)} vs ${getTeamName(match.team2)}</span>
-                <span class="score">${score}</span>
-                <span class="time">${timeSlot}</span>
-                <span class="status">${status}</span>
+                <span>${gruppenLabel}</span>
+                <span>${getTeamName(match.team1)} vs ${getTeamName(match.team2)}</span>
+                <span>${score}</span>
+                <span>${timeSlot}</span>
+                <span>${status}</span>
             `;
             matchesContainer.appendChild(div);
         });
@@ -253,14 +250,11 @@ function displaySchedule(matches, teams = []) {
                         const status = match.status === 'completed' ? 'Abgeschlossen' : match.status === 'live' ? 'Läuft' : 'Geplant';
                         const timeSlot = `${match.startTime} - ${match.endTime}`;
                         div.innerHTML = `
-                            <span class="match-header">
-                                <div class="match-id">${match.round || match.id}</div>
-                                <div class="match-round">${roundName}</div>
-                            </span>
-                            <span class="teams">${getTeamName(match.team1)} vs ${getTeamName(match.team2)}</span>
-                            <span class="score">${score}</span>
-                            <span class="time">${timeSlot}</span>
-                            <span class="status">${status}</span>
+                            <span>${match.round || match.id}</span>
+                            <span>${getTeamName(match.team1)} vs ${getTeamName(match.team2)}</span>
+                            <span>${score}</span>
+                            <span>${timeSlot}</span>
+                            <span>${status}</span>
                         `;
                         matchesContainer.appendChild(div);
                     }

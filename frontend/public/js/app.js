@@ -112,6 +112,7 @@ async function loadStandings() {
 }
 
 function displaySchedule(matches, teams = []) {
+    console.log('Vorrunde laut Backend:', matches.vorrunde && matches.vorrunde.map(m => `${m.round} | ${m.team1} vs ${m.team2}`));
     const el = document.getElementById('schedule-list');
     if (!el) return;
     el.innerHTML = '';

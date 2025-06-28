@@ -258,7 +258,7 @@ async function generateMatches(teams) {
         // 3 Gruppen à 3 Teams
         const gruppen = [teams.slice(0, 3), teams.slice(3, 6), teams.slice(6, 9)];
         const gruppenNamen = ['A', 'B', 'C'];
-        // Spiele in Reihenfolge: A, B, C, A, B, C, A, B, C
+        // Alle Gruppenspiele vorbereiten
         let gruppenSpiele = [];
         gruppen.forEach((gruppe, gIdx) => {
             // Jeder gegen jeden in der Gruppe (3 Spiele pro Gruppe)
@@ -274,15 +274,19 @@ async function generateMatches(teams) {
             }
             gruppenSpiele.push(spiele);
         });
-        // Interleaving: [A1, B1, C1, A2, B2, C2, A3, B3, C3]
+        // Alle Gruppenspiele in ein Array
+        let alleSpiele = [...gruppenSpiele[0], ...gruppenSpiele[1], ...gruppenSpiele[2]];
+        // Optimiertes Scheduling: Kein Team spielt zweimal hintereinander
         let vorrundenSpiele = [];
-        for (let r = 0; r < 3; r++) {
-            for (let g = 0; g < 3; g++) {
-                vorrundenSpiele.push({
-                    gruppe: gruppenNamen[g],
-                    ...gruppenSpiele[g][r]
-                });
-            }
+        let letzteTeams = new Set();
+        while (alleSpiele.length > 0) {
+            let idx = alleSpiele.findIndex(spiel =>
+                !letzteTeams.has(spiel.team1) && !letzteTeams.has(spiel.team2)
+            );
+            if (idx === -1) idx = 0; // Falls nicht möglich, nimm das erste
+            const spiel = alleSpiele.splice(idx, 1)[0];
+            vorrundenSpiele.push(spiel);
+            letzteTeams = new Set([spiel.team1, spiel.team2]);
         }
         vorrundenSpiele.forEach((spiel, idx) => {
             const matchStart = new Date(currentTime.getTime() + idx * 12 * 60 * 1000);
@@ -351,18 +355,35 @@ async function generateMatches(teams) {
         const gruppenNamen = ['A', 'B'];
         // Alle Gruppenspiele vorbereiten
         let spieleA = [], spieleB = [];
+        // Erst alle A-Paarungen
         for (let i = 0; i < 4; i++) {
             for (let j = i + 1; j < 4; j++) {
                 spieleA.push({ gruppe: 'A', team1: gruppen[0][i].name, team2: gruppen[0][j].name });
+            }
+        }
+        // Dann alle B-Paarungen
+        for (let i = 0; i < 4; i++) {
+            for (let j = i + 1; j < 4; j++) {
                 spieleB.push({ gruppe: 'B', team1: gruppen[1][i].name, team2: gruppen[1][j].name });
             }
         }
-        // Abwechselnd A, B, A, B ...
+        // Blockweise: immer 2x A, dann 2x B, dann wieder 2x A, 2x B ...
         let vorrundenSpiele = [];
-        for (let r = 0; r < 6; r++) {
-            vorrundenSpiele.push(spieleA[r]);
-            vorrundenSpiele.push(spieleB[r]);
+        let blockCount = Math.ceil(spieleA.length / 2); // 6 Spiele pro Gruppe, also 3 Blöcke
+        for (let block = 0; block < blockCount; block++) {
+            // 2x A
+            for (let k = 0; k < 2; k++) {
+                let idx = block * 2 + k;
+                if (idx < spieleA.length) vorrundenSpiele.push(spieleA[idx]);
+            }
+            // 2x B
+            for (let k = 0; k < 2; k++) {
+                let idx = block * 2 + k;
+                if (idx < spieleB.length) vorrundenSpiele.push(spieleB[idx]);
+            }
         }
+        // Debug-Ausgabe
+        console.log('Vorrunden-Spiele (AABB):', vorrundenSpiele.map(s => s.gruppe + ': ' + s.team1 + ' vs ' + s.team2));
         vorrundenSpiele.forEach((spiel, idx) => {
             const matchStart = new Date(currentTime.getTime() + idx * 12 * 60 * 1000);
             const matchEnd = new Date(matchStart.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
@@ -1385,3 +1406,28 @@ ensureTeamsJson().then(ensureMatchesAndStandings).then(loadTimerState).then(() =
         console.log(`Backend läuft auf http://localhost:${PORT}`);
     });
 }); 
+
+// ... existing code ...
+console.log('SERVER STARTED - DEBUG TEST');
+
+// Beim Serverstart: matches.json löschen, damit der Spielplan immer neu generiert wird
+try {
+    if (fs.existsSync(MATCHES_JSON)) {
+        fs.unlinkSync(MATCHES_JSON);
+        console.log('matches.json gelöscht, Spielplan wird neu generiert!');
+    }
+} catch (e) {
+    console.log('Fehler beim Löschen von matches.json:', e.message);
+}
+// ... existing code ... 
+
+// Nach Serverstart: Teams und Vorrunden-Spiele debuggen
+fs.readJson(TEAMS_JSON).then(teams => {
+    console.log('Teams gefunden:', teams.map(t => t.name));
+    if (teams.length === 8) {
+        generateMatches(teams).then(matches => {
+            console.log('Vorrunden-Spiele:', matches.vorrunde.map(s => s.round + ': ' + s.team1 + ' vs ' + s.team2));
+        });
+    }
+});
+// ... existing code ... 

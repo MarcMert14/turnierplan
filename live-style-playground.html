@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Style Playground – Teamkarten</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 2rem;
+        }
+        .teams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+        }
+        .team-card {
+            background: #f8faff;
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(30,60,114,0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            min-width: 0;
+        }
+        .team-card-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            flex-wrap: nowrap;
+        }
+        .team-number {
+            background: #1e3c72;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        .team-name-input {
+            flex: 1 1 0;
+            min-width: 0;
+            max-width: 100%;
+            font-size: 1rem;
+            padding: 0.4rem 0.6rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .team-card-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .team-card .save-team-name-btn {
+            background: #27ae60;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 0.4rem 0.8rem;
+            margin-right: 4px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+        }
+        .team-card .save-team-name-btn:hover {
+            background: #219150;
+        }
+        .team-card .delete-team-btn {
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 0.4rem 0.8rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+        }
+        .team-card .delete-team-btn:hover {
+            background: #c0392b;
+        }
+        @media (max-width: 700px) {
+            .teams-grid {
+                grid-template-columns: 1fr;
+            }
+            .team-card-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .team-card-actions {
+                flex-direction: row;
+                justify-content: flex-start;
+                gap: 8px;
+            }
+            .team-card {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .team-number {
+                margin-bottom: 0.2rem;
+            }
+            .team-name-input {
+                width: 100%;
+                min-width: 0;
+                max-width: 100%;
+                flex: unset;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h2>Live Style Playground: Teamkarten-Layout</h2>
+    <div class="teams-grid">
+        <div class="team-card">
+            <div class="team-card-row">
+                <div class="team-number">1</div>
+                <input type="text" class="team-name-input" value="Landjugend Schmerlecke">
+                <div class="team-card-actions">
+                    <button class="save-team-name-btn">Speichern</button>
+                    <button class="delete-team-btn">Entfernen</button>
+                </div>
+            </div>
+        </div>
+        <div class="team-card">
+            <div class="team-card-row">
+                <div class="team-number">2</div>
+                <input type="text" class="team-name-input" value="FC Siewillja">
+                <div class="team-card-actions">
+                    <button class="save-team-name-btn">Speichern</button>
+                    <button class="delete-team-btn">Entfernen</button>
+                </div>
+            </div>
+        </div>
+        <div class="team-card">
+            <div class="team-card-row">
+                <div class="team-number">3</div>
+                <input type="text" class="team-name-input" value="Pegelclub">
+                <div class="team-card-actions">
+                    <button class="save-team-name-btn">Speichern</button>
+                    <button class="delete-team-btn">Entfernen</button>
+                </div>
+            </div>
+        </div>
+        <div class="team-card">
+            <div class="team-card-row">
+                <div class="team-number">4</div>
+                <input type="text" class="team-name-input" value="Bauwagen">
+                <div class="team-card-actions">
+                    <button class="save-team-name-btn">Speichern</button>
+                    <button class="delete-team-btn">Entfernen</button>
+                </div>
+            </div>
+        </div>
+        <div class="team-card">
+            <div class="team-card-row">
+                <div class="team-number">5</div>
+                <input type="text" class="team-name-input" value="SW Bier">
+                <div class="team-card-actions">
+                    <button class="save-team-name-btn">Speichern</button>
+                    <button class="delete-team-btn">Entfernen</button>
+                </div>
+            </div>
+        </div>
+        <div class="team-card">
+            <div class="team-card-row">
+                <div class="team-number">6</div>
+                <input type="text" class="team-name-input" value="Haarstrang Kegler">
+                <div class="team-card-actions">
+                    <button class="save-team-name-btn">Speichern</button>
+                    <button class="delete-team-btn">Entfernen</button>
+                </div>
+            </div>
+        </div>
+        <div class="team-card">
+            <div class="team-card-row">
+                <div class="team-number">7</div>
+                <input type="text" class="team-name-input" value="Inter National">
+                <div class="team-card-actions">
+                    <button class="save-team-name-btn">Speichern</button>
+                    <button class="delete-team-btn">Entfernen</button>
+                </div>
+            </div>
+        </div>
+        <div class="team-card">
+            <div class="team-card-row">
+                <div class="team-number">8</div>
+                <input type="text" class="team-name-input" value="Saufsocken">
+                <div class="team-card-actions">
+                    <button class="save-team-name-btn">Speichern</button>
+                    <button class="delete-team-btn">Entfernen</button>
+                </div>
+            </div>
+        </div>
+        <div class="team-card">
+            <div class="team-card-row">
+                <div class="team-number">9</div>
+                <input type="text" class="team-name-input" value="Team Max">
+                <div class="team-card-actions">
+                    <button class="save-team-name-btn">Speichern</button>
+                    <button class="delete-team-btn">Entfernen</button>
+                </div>
+            </div>
+        </div>
+        <div class="team-card">
+            <div class="team-card-row">
+                <div class="team-number">10</div>
+                <input type="text" class="team-name-input" value="SWO Allstars">
+                <div class="team-card-actions">
+                    <button class="save-team-name-btn">Speichern</button>
+                    <button class="delete-team-btn">Entfernen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <p>Du kannst das <b>&lt;style&gt;</b>-Tag oben beliebig anpassen und siehst die Änderungen sofort!</p>
+</body>
+</html> 

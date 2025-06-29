@@ -937,4 +937,40 @@ async function deleteResult(matchId) {
     } catch (error) {
         showMessage('Fehler beim Löschen: ' + error.message, 'error');
     }
-} 
+}
+
+// Teams mischen
+async function shuffleTeams() {
+    try {
+        // Teams laden
+        let teams = await fetchData('teams');
+        // Fisher-Yates Shuffle
+        for (let i = teams.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [teams[i], teams[j]] = [teams[j], teams[i]];
+        }
+        // Alte Teams löschen
+        for (const team of teams) {
+            await fetchData(`teams/${encodeURIComponent(team.name)}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+        // Neue Reihenfolge speichern
+        for (const team of teams) {
+            await fetchData('teams', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: team.name })
+            });
+        }
+        // Ansicht und Spielplan neu laden
+        await loadAdminData();
+        showMessage('Teams erfolgreich gemischt und gespeichert!', 'success');
+    } catch (error) {
+        showMessage('Fehler beim Mischen der Teams: ' + error.message, 'error');
+    }
+}
+
+// Event-Listener für Shuffle-Button
+window.shuffleTeams = shuffleTeams; 

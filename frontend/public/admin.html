@@ -58,6 +58,13 @@
             <section class="live-section">
                 <h2>👥 Teams-Verwaltung</h2>
                 <div id="admin-teams-list" class="loading">Lade Teams...</div>
+                <h3>Aktuelle Teams</h3>
+                <button class="btn btn-warning" style="margin-bottom: 1rem;" onclick="adminManager.shuffleTeams()">
+                    <i class="fas fa-random"></i> Teams mischen
+                </button>
+                <div id="teams-list" class="teams-grid">
+                    <!-- Wird durch JavaScript gefüllt -->
+                </div>
             </section>
 
             <!-- Settings Section -->

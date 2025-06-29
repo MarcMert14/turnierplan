@@ -1644,4 +1644,41 @@ main {
         white-space: nowrap;
         box-sizing: border-box;
     }
+}
+
+.team-card .save-team-name-btn, .team-card .delete-team-btn {
+    display: inline-block;
+    margin-left: 0;
+    margin-right: 0;
+    opacity: 1;
+    visibility: visible;
+}
+
+.team-card .save-team-name-btn {
+    background: #27ae60;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 0.4rem 0.8rem;
+    margin-right: 4px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+.team-card .save-team-name-btn:hover {
+    background: #219150;
+}
+
+.team-card .delete-team-btn {
+    background: #e74c3c;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+.team-card .delete-team-btn:hover {
+    background: #c0392b;
 } 

@@ -471,8 +471,10 @@ async function loadAdminData() {
                     <div class="team-card">
                         <div class="team-number">${index + 1}</div>
                         <input type="text" class="team-name-input" data-old-name="${team.name}" value="${team.name}" style="width: 140px;">
-                        <button class="save-team-name-btn" data-old-name="${team.name}">Speichern</button>
-                        <button class="delete-team-btn" data-name="${team.name}" style="margin-left:8px;">Entfernen</button>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="save-team-name-btn" data-old-name="${team.name}">Speichern</button>
+                            <button class="delete-team-btn" data-name="${team.name}">Entfernen</button>
+                        </div>
                     </div>
                 `).join('')}
             </div>

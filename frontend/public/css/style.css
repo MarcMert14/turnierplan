@@ -1688,6 +1688,7 @@ main {
     align-items: center;
     gap: 12px;
     width: 100%;
+    flex-wrap: nowrap;
 }
 .team-card-actions {
     display: flex;
@@ -1700,6 +1701,7 @@ main {
         flex-direction: column;
         align-items: stretch;
         gap: 8px;
+        flex-wrap: wrap;
     }
     .team-card-actions {
         flex-direction: row;
@@ -1717,5 +1719,6 @@ main {
         width: 100%;
         min-width: 0;
         max-width: 100%;
+        flex: unset;
     }
 } 

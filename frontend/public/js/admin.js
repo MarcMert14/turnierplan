@@ -469,16 +469,18 @@ async function loadAdminData() {
             <div class="teams-grid">
                 ${teams.map((team, index) => `
                     <div class="team-card">
-                        <div class="team-number">${index + 1}</div>
-                        <input type="text" class="team-name-input" data-old-name="${team.name}" value="${team.name}" style="width: 140px;">
-                        <div style="display: flex; gap: 8px;">
-                            <button class="save-team-name-btn" data-old-name="${team.name}">Speichern</button>
-                            <button class="delete-team-btn" data-name="${team.name}">Entfernen</button>
+                        <div class="team-card-row">
+                            <div class="team-number">${index + 1}</div>
+                            <input type="text" class="team-name-input" data-old-name="${team.name}" value="${team.name}" style="width: 140px;">
+                            <div class="team-card-actions">
+                                <button class="save-team-name-btn" data-old-name="${team.name}">Speichern</button>
+                                <button class="delete-team-btn" data-name="${team.name}">Entfernen</button>
+                            </div>
                         </div>
                     </div>
                 `).join('')}
             </div>
-            <div style="margin-top:1rem;display:flex;gap:8px;align-items:center;">
+            <div style="margin-top:1rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 <input type="text" id="new-team-name" placeholder="Neues Team" style="width:140px;">
                 <button id="add-team-btn">Team hinzufügen</button>
             </div>

@@ -6,14 +6,15 @@ class AdminManager {
         this.init();
     }
 
-    init() {
+    async init() {
         this.setupNavigation();
         this.setupModals();
         this.setupEventListeners();
         this.loadMatches();
-        this.loadTeams();
+        await this.loadTeams();
         this.loadSchedule();
-        this.setupAutoSave();
+        await this.setupAutoSave();
+        await this.setupExcelImport();
     }
 
     // Navigation Setup
@@ -240,50 +241,85 @@ class AdminManager {
     }
 
     // Load Teams
-    loadTeams() {
+    async loadTeams() {
         const teamsList = document.getElementById('teams-list');
         teamsList.innerHTML = '';
 
-        TOURNAMENT_CONFIG.teams.forEach(team => {
-            const teamEl = document.createElement('div');
-            teamEl.className = 'team-card';
-            teamEl.innerHTML = `
-                <h4>${team}</h4>
-                <button class="btn btn-danger btn-small" onclick="adminManager.removeTeam('${team}')">
-                    <i class="fas fa-trash"></i> Entfernen
-                </button>
-            `;
-            teamsList.appendChild(teamEl);
-        });
+        try {
+            const response = await fetch('/api/teams');
+            const teams = await response.json();
+            
+            teams.forEach(team => {
+                const teamEl = document.createElement('div');
+                teamEl.className = 'team-card';
+                teamEl.innerHTML = `
+                    <h4>${team.name}</h4>
+                    <button class="btn btn-danger btn-small" onclick="adminManager.removeTeam('${team.name}')">
+                        <i class="fas fa-trash"></i> Entfernen
+                    </button>
+                `;
+                teamsList.appendChild(teamEl);
+            });
+        } catch (error) {
+            console.error('Fehler beim Laden der Teams:', error);
+            this.showMessage('Fehler beim Laden der Teams', 'error');
+        }
     }
 
     // Add Team
-    addTeam() {
+    async addTeam() {
         const teamName = document.getElementById('new-team-name').value.trim();
         if (!teamName) {
             this.showMessage('Bitte geben Sie einen Team-Namen ein.', 'error');
             return;
         }
 
-        if (TOURNAMENT_CONFIG.teams.includes(teamName)) {
-            this.showMessage('Dieses Team existiert bereits.', 'error');
-            return;
-        }
+        try {
+            const response = await fetch('/api/teams', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: teamName })
+            });
 
-        TOURNAMENT_CONFIG.teams.push(teamName);
-        this.loadTeams();
-        document.getElementById('new-team-name').value = '';
-        this.showMessage(`Team "${teamName}" erfolgreich hinzugefügt!`, 'success');
+            const result = await response.json();
+            
+            if (result.success) {
+                this.loadTeams();
+                document.getElementById('new-team-name').value = '';
+                this.showMessage(`Team "${teamName}" erfolgreich hinzugefügt!`, 'success');
+            } else {
+                this.showMessage(result.message || 'Fehler beim Hinzufügen des Teams', 'error');
+            }
+        } catch (error) {
+            console.error('Fehler beim Hinzufügen des Teams:', error);
+            this.showMessage('Fehler beim Hinzufügen des Teams', 'error');
+        }
     }
 
     // Remove Team
-    removeTeam(teamName) {
+    async removeTeam(teamName) {
         if (confirm(`Möchten Sie das Team "${teamName}" wirklich entfernen?`)) {
-            const index = TOURNAMENT_CONFIG.teams.indexOf(teamName);
-            if (index > -1) {
-                TOURNAMENT_CONFIG.teams.splice(index, 1);
-                this.loadTeams();
-                this.showMessage(`Team "${teamName}" erfolgreich entfernt!`, 'success');
+            try {
+                const response = await fetch(`/api/teams/${encodeURIComponent(teamName)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    this.loadTeams();
+                    this.showMessage(`Team "${teamName}" erfolgreich entfernt!`, 'success');
+                } else {
+                    this.showMessage(result.message || 'Fehler beim Entfernen des Teams', 'error');
+                }
+            } catch (error) {
+                console.error('Fehler beim Entfernen des Teams:', error);
+                this.showMessage('Fehler beim Entfernen des Teams', 'error');
             }
         }
     }
@@ -395,43 +431,77 @@ class AdminManager {
     }
 
     // Export Data
-    exportData() {
-        const data = {
-            config: TOURNAMENT_CONFIG,
-            matches: window.tournamentManager.matches,
-            standings: window.tournamentManager.standings,
-            timestamp: new Date().toISOString()
-        };
+    async exportData() {
+        try {
+            // Aktuelle Teams von der Backend-API laden
+            const teamsResponse = await fetch('/api/teams');
+            const teams = await teamsResponse.json();
+            const teamNames = teams.map(team => team.name);
+            
+            const data = {
+                config: { ...TOURNAMENT_CONFIG, teams: teamNames },
+                matches: window.tournamentManager.matches,
+                standings: window.tournamentManager.standings,
+                timestamp: new Date().toISOString()
+            };
 
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `juxturnier-export-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `juxturnier-export-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
 
-        this.showMessage('Daten erfolgreich exportiert!', 'success');
+            this.showMessage('Daten erfolgreich exportiert!', 'success');
+        } catch (error) {
+            console.error('Fehler beim Exportieren:', error);
+            this.showMessage('Fehler beim Exportieren der Daten', 'error');
+        }
     }
 
     // Import Data
-    importData(file) {
+    async importData(file) {
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
                 const data = JSON.parse(e.target.result);
                 
                 if (data.config && data.matches) {
+                    // Teams über die Backend-API importieren
+                    if (data.config.teams && Array.isArray(data.config.teams)) {
+                        // Erst alle bestehenden Teams löschen
+                        const currentTeamsResponse = await fetch('/api/teams');
+                        const currentTeams = await currentTeamsResponse.json();
+                        
+                        for (const team of currentTeams) {
+                            await fetch(`/api/teams/${encodeURIComponent(team.name)}`, {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' }
+                            });
+                        }
+
+                        // Neue Teams hinzufügen
+                        for (const teamName of data.config.teams) {
+                            await fetch('/api/teams', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name: teamName })
+                            });
+                        }
+                    }
+
+                    // Andere Konfigurationen übernehmen
                     Object.assign(TOURNAMENT_CONFIG, data.config);
                     window.tournamentManager.matches = data.matches;
                     window.tournamentManager.standings = data.standings || [];
                     
                     this.loadMatches();
-                    this.loadTeams();
+                    await this.loadTeams();
                     this.loadSchedule();
                     
                     this.showMessage('Daten erfolgreich importiert!', 'success');
@@ -439,6 +509,7 @@ class AdminManager {
                     this.showMessage('Ungültige Datei.', 'error');
                 }
             } catch (error) {
+                console.error('Fehler beim Importieren:', error);
                 this.showMessage('Fehler beim Importieren der Datei.', 'error');
             }
         };
@@ -470,25 +541,36 @@ class AdminManager {
     }
 
     // Auto Save
-    setupAutoSave() {
-        setInterval(() => {
+    async setupAutoSave() {
+        setInterval(async () => {
             if (window.tournamentManager) {
-                localStorage.setItem('juxturnier-data', JSON.stringify({
-                    config: TOURNAMENT_CONFIG,
-                    matches: window.tournamentManager.matches,
-                    standings: window.tournamentManager.standings
-                }));
+                try {
+                    // Aktuelle Teams von der Backend-API laden
+                    const teamsResponse = await fetch('/api/teams');
+                    const teams = await teamsResponse.json();
+                    const teamNames = teams.map(team => team.name);
+                    
+                    localStorage.setItem('juxturnier-data', JSON.stringify({
+                        config: { ...TOURNAMENT_CONFIG, teams: teamNames },
+                        matches: window.tournamentManager.matches,
+                        standings: window.tournamentManager.standings
+                    }));
+                } catch (error) {
+                    console.error('Fehler beim Auto-Save:', error);
+                }
             }
         }, 30000); // Every 30 seconds
     }
 
     // Load from localStorage
-    loadFromStorage() {
+    async loadFromStorage() {
         const saved = localStorage.getItem('juxturnier-data');
         if (saved) {
             try {
                 const data = JSON.parse(saved);
-                Object.assign(TOURNAMENT_CONFIG, data.config);
+                // Nur andere Konfigurationen übernehmen, Teams von der Backend-API laden
+                const { teams, ...otherConfig } = data.config;
+                Object.assign(TOURNAMENT_CONFIG, otherConfig);
                 if (window.tournamentManager) {
                     window.tournamentManager.matches = data.matches;
                     window.tournamentManager.standings = data.standings;
@@ -496,6 +578,108 @@ class AdminManager {
             } catch (error) {
                 console.error('Error loading saved data:', error);
             }
+        }
+    }
+
+    // Excel Import
+    async setupExcelImport() {
+        const importBtn = document.getElementById('import-teams-excel');
+        const fileInput = document.getElementById('excel-file-input');
+        if (!importBtn || !fileInput) return;
+
+        importBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    // Annahme: Teams stehen ab Zeile 4, Teamname in Spalte B (Index 1), 'Dabei?' in Spalte F (Index 5)
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    const teamNames = rows
+                        .slice(3)
+                        .filter(r => r[5] && r[5].toString().toLowerCase() === 'ja')
+                        .map(r => r[1])
+                        .filter(Boolean);
+                    if (teamNames.length === 0) {
+                        this.showMessage('Keine Teamnamen mit "Ja" in der Excel-Datei gefunden.', 'error');
+                        return;
+                    }
+
+                    // Teams über die Backend-API importieren
+                    // Erst alle bestehenden Teams löschen
+                    try {
+                        const currentTeamsResponse = await fetch('/api/teams');
+                        const currentTeams = await currentTeamsResponse.json();
+                        
+                        // Alle bestehenden Teams löschen
+                        for (const team of currentTeams) {
+                            await fetch(`/api/teams/${encodeURIComponent(team.name)}`, {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' }
+                            });
+                        }
+
+                        // Neue Teams hinzufügen
+                        for (const teamName of teamNames) {
+                            await fetch('/api/teams', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name: teamName })
+                            });
+                        }
+
+                        // Teams neu laden
+                        await this.loadTeams();
+                        this.showMessage('Teams und Spielplan erfolgreich aus Excel importiert!', 'success');
+                    } catch (error) {
+                        console.error('Fehler beim Importieren der Teams:', error);
+                        this.showMessage('Fehler beim Importieren der Teams', 'error');
+                    }
+                } catch (err) {
+                    this.showMessage('Fehler beim Einlesen der Excel-Datei.', 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    // Teams mischen
+    async shuffleTeams() {
+        try {
+            // Teams laden
+            const response = await fetch('/api/teams');
+            let teams = await response.json();
+            // Fisher-Yates Shuffle
+            for (let i = teams.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [teams[i], teams[j]] = [teams[j], teams[i]];
+            }
+            // Alte Teams löschen
+            for (const team of teams) {
+                await fetch(`/api/teams/${encodeURIComponent(team.name)}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            // Neue Reihenfolge speichern
+            for (const team of teams) {
+                await fetch('/api/teams', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: team.name })
+                });
+            }
+            // Ansicht und Spielplan neu laden
+            await this.loadTeams();
+            this.loadSchedule();
+            this.showMessage('Teams erfolgreich gemischt und gespeichert!', 'success');
+        } catch (error) {
+            console.error('Fehler beim Mischen der Teams:', error);
+            this.showMessage('Fehler beim Mischen der Teams', 'error');
         }
     }
 }
@@ -512,51 +696,12 @@ class AdminManager {
     }
 })();
 
-AdminManager.prototype.setupExcelImport = function() {
-    const importBtn = document.getElementById('import-teams-excel');
-    const fileInput = document.getElementById('excel-file-input');
-    if (!importBtn || !fileInput) return;
-
-    importBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            try {
-                const data = new Uint8Array(evt.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                // Annahme: Teams stehen ab Zeile 4, Teamname in Spalte B (Index 1), 'Dabei?' in Spalte F (Index 5)
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-                const teamNames = rows
-                    .slice(3)
-                    .filter(r => r[5] && r[5].toString().toLowerCase() === 'ja')
-                    .map(r => r[1])
-                    .filter(Boolean);
-                if (teamNames.length === 0) {
-                    this.showMessage('Keine Teamnamen mit "Ja" in der Excel-Datei gefunden.', 'error');
-                    return;
-                }
-                TOURNAMENT_CONFIG.teams = teamNames;
-                // Spielplan und Manager komplett neu erzeugen
-                window.tournamentManager = new TournamentManager();
-                this.loadTeams();
-                this.showMessage('Teams und Spielplan erfolgreich aus Excel importiert!', 'success');
-            } catch (err) {
-                this.showMessage('Fehler beim Einlesen der Excel-Datei.', 'error');
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    });
-};
-
 // Initialize Admin Manager
 let adminManager;
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     adminManager = new AdminManager();
-    adminManager.loadFromStorage();
-    if (window.XLSX) adminManager.setupExcelImport();
+    await adminManager.loadFromStorage();
+    if (window.XLSX) await adminManager.setupExcelImport();
 });
 
 // Keyboard shortcuts

@@ -4,10 +4,7 @@ const TOURNAMENT_CONFIG = {
     gameDuration: 8, // Minuten
     breakDuration: 4, // Minuten
     totalDuration: 12, // Minuten pro Spiel (8 + 4)
-    teams: [
-        'Team A', 'Team B', 'Team C', 'Team D', 'Team E',
-        'Team F', 'Team G', 'Team H', 'Team I', 'Team J'
-    ]
+    teams: [] // Wird dynamisch von der Backend-API geladen
 };
 
 // Turnier-Status
@@ -24,10 +21,27 @@ class TournamentManager {
         this.init();
     }
 
-    init() {
+    async init() {
+        await this.loadTeams();
         this.generateSchedule();
         this.updateCurrentMatch();
         this.startTimer();
+    }
+
+    // Teams von der Backend-API laden
+    async loadTeams() {
+        try {
+            const response = await fetch('/api/teams');
+            const teams = await response.json();
+            TOURNAMENT_CONFIG.teams = teams.map(team => team.name);
+        } catch (error) {
+            console.error('Fehler beim Laden der Teams:', error);
+            // Fallback auf Standard-Teams
+            TOURNAMENT_CONFIG.teams = [
+                'Team A', 'Team B', 'Team C', 'Team D', 'Team E',
+                'Team F', 'Team G', 'Team H', 'Team I', 'Team J'
+            ];
+        }
     }
 
     // Spielplan generieren

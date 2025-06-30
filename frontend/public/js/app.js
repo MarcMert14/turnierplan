@@ -268,16 +268,26 @@ function displaySchedule(matches, teams = []) {
 }
 
 function displayStandings(standings) {
+    console.log('DEBUG standings:', standings);
     const el = document.getElementById('standings-table');
-    if (!el) return;
-    // Gruppentabellen für 8/9 Teams
-    if (typeof standings === 'object' && !Array.isArray(standings)) {
+    if (!el) {
+        console.error('Element standings-table nicht gefunden!');
+        return;
+    }
+    if (!Array.isArray(standings) || standings.length === 0) {
+        el.innerHTML = '<div class="error">Keine Daten für die Tabelle vorhanden.</div>';
+        return;
+    }
+    // Gruppentabellen für 8/9 Teams: Array mit Feld 'gruppe'
+    if (Array.isArray(standings) && standings.length > 0 && standings[0].gruppe) {
         el.innerHTML = '';
-        Object.entries(standings).forEach(([gruppe, teams]) => {
-            let groupTitle = gruppe === 'X' ? 'Gruppe X (ohne Zuordnung)' : `Gruppe ${gruppe}`;
+        // Gruppen extrahieren und sortieren
+        const gruppen = Array.from(new Set(standings.map(t => t.gruppe).filter(g => g))).sort();
+        gruppen.forEach(gruppe => {
+            const teams = standings.filter(t => t.gruppe === gruppe);
             el.innerHTML += `
                 <div class="standings-group">
-                    <h4>${groupTitle}</h4>
+                    <h4>Gruppe ${gruppe}</h4>
                     <div class="standings-table">
                         <div class="header">
                             <span>Platz</span>
@@ -303,8 +313,7 @@ function displayStandings(standings) {
         });
         return;
     }
-    // Einzel-Tabelle (10 Teams)
-    if (!Array.isArray(standings)) return;
+    // Einzel-Tabelle (10 Teams oder Fallback)
     standings.sort((a, b) => {
         if (b.points !== a.points) return b.points - a.points;
         const diffA = a.goalsFor - a.goalsAgainst;

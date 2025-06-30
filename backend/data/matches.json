@@ -1,11 +1,11 @@
 {
   "vorrunde": [
     {
-      "id": "v1",
+      "id": "gA_FC Siewillja_vs_Saufsocken",
       "phase": "vorrunde",
-      "round": "Vorrunde",
-      "team1": "Saufsocken",
-      "team2": "FC Siewillja",
+      "round": "Gruppe A",
+      "team1": "FC Siewillja",
+      "team2": "Saufsocken",
       "score1": null,
       "score2": null,
       "status": "geplant",
@@ -13,10 +13,10 @@
       "endTime": "14:08"
     },
     {
-      "id": "v2",
+      "id": "gB_Bauwagen_vs_Inter National",
       "phase": "vorrunde",
-      "round": "Vorrunde",
-      "team1": "Pegelclub",
+      "round": "Gruppe B",
+      "team1": "Bauwagen",
       "team2": "Inter National",
       "score1": null,
       "score2": null,
@@ -25,11 +25,11 @@
       "endTime": "14:20"
     },
     {
-      "id": "v3",
+      "id": "gC_SW Bier_vs_Landjugend Schmerlecke",
       "phase": "vorrunde",
-      "round": "Vorrunde",
+      "round": "Gruppe C",
       "team1": "SW Bier",
-      "team2": "Bauwagen",
+      "team2": "Landjugend Schmerlecke",
       "score1": null,
       "score2": null,
       "status": "geplant",
@@ -37,11 +37,11 @@
       "endTime": "14:32"
     },
     {
-      "id": "v4",
+      "id": "gA_FC Siewillja_vs_Test",
       "phase": "vorrunde",
-      "round": "Vorrunde",
-      "team1": "SWO Allstars",
-      "team2": "Landjugend Schmerlecke",
+      "round": "Gruppe A",
+      "team1": "FC Siewillja",
+      "team2": "Test",
       "score1": null,
       "score2": null,
       "status": "geplant",
@@ -49,11 +49,11 @@
       "endTime": "14:44"
     },
     {
-      "id": "v5",
+      "id": "gB_Bauwagen_vs_Pegelclub",
       "phase": "vorrunde",
-      "round": "Vorrunde",
-      "team1": "Haarstrang Kegler",
-      "team2": "Team Max",
+      "round": "Gruppe B",
+      "team1": "Bauwagen",
+      "team2": "Pegelclub",
       "score1": null,
       "score2": null,
       "status": "geplant",
@@ -61,11 +61,11 @@
       "endTime": "14:56"
     },
     {
-      "id": "v6",
+      "id": "gC_SW Bier_vs_SWO Allstars",
       "phase": "vorrunde",
-      "round": "Vorrunde",
-      "team1": "Saufsocken",
-      "team2": "Pegelclub",
+      "round": "Gruppe C",
+      "team1": "SW Bier",
+      "team2": "SWO Allstars",
       "score1": null,
       "score2": null,
       "status": "geplant",
@@ -73,11 +73,11 @@
       "endTime": "15:08"
     },
     {
-      "id": "v7",
+      "id": "gA_Saufsocken_vs_Test",
       "phase": "vorrunde",
-      "round": "Vorrunde",
-      "team1": "FC Siewillja",
-      "team2": "Inter National",
+      "round": "Gruppe A",
+      "team1": "Saufsocken",
+      "team2": "Test",
       "score1": null,
       "score2": null,
       "status": "geplant",
@@ -85,11 +85,11 @@
       "endTime": "15:20"
     },
     {
-      "id": "v8",
+      "id": "gB_Inter National_vs_Pegelclub",
       "phase": "vorrunde",
-      "round": "Vorrunde",
-      "team1": "SW Bier",
-      "team2": "SWO Allstars",
+      "round": "Gruppe B",
+      "team1": "Inter National",
+      "team2": "Pegelclub",
       "score1": null,
       "score2": null,
       "status": "geplant",
@@ -97,28 +97,16 @@
       "endTime": "15:32"
     },
     {
-      "id": "v9",
+      "id": "gC_Landjugend Schmerlecke_vs_SWO Allstars",
       "phase": "vorrunde",
-      "round": "Vorrunde",
-      "team1": "Bauwagen",
-      "team2": "Landjugend Schmerlecke",
+      "round": "Gruppe C",
+      "team1": "Landjugend Schmerlecke",
+      "team2": "SWO Allstars",
       "score1": null,
       "score2": null,
       "status": "geplant",
       "startTime": "15:36",
       "endTime": "15:44"
-    },
-    {
-      "id": "v10",
-      "phase": "vorrunde",
-      "round": "Vorrunde",
-      "team1": "Haarstrang Kegler",
-      "team2": "Team Max",
-      "score1": null,
-      "score2": null,
-      "status": "geplant",
-      "startTime": "15:48",
-      "endTime": "15:56"
     }
   ],
   "ko": [
@@ -129,16 +117,28 @@
       "team1": "",
       "team2": "",
       "status": "pause",
-      "startTime": "15:56",
-      "endTime": "16:16",
+      "startTime": "15:44",
+      "endTime": "16:04",
       "pauseDuration": 20
     },
     {
-      "id": "AF1",
+      "id": "VF1",
       "phase": "ko",
-      "round": "Achtelfinale 1",
-      "team1": "Platz 7",
-      "team2": "Platz 10",
+      "round": "Viertelfinale 1",
+      "team1": "1. Gruppe A",
+      "team2": "Bester 3. Gruppe B/C",
+      "score1": null,
+      "score2": null,
+      "status": "wartend",
+      "startTime": "16:04",
+      "endTime": "16:12"
+    },
+    {
+      "id": "VF2",
+      "phase": "ko",
+      "round": "Viertelfinale 2",
+      "team1": "1. Gruppe B",
+      "team2": "Bester 3. Gruppe A/C",
       "score1": null,
       "score2": null,
       "status": "wartend",
@@ -146,11 +146,11 @@
       "endTime": "16:24"
     },
     {
-      "id": "AF2",
+      "id": "VF3",
       "phase": "ko",
-      "round": "Achtelfinale 2",
-      "team1": "Platz 8",
-      "team2": "Platz 9",
+      "round": "Viertelfinale 3",
+      "team1": "1. Gruppe C",
+      "team2": "2. Gruppe A",
       "score1": null,
       "score2": null,
       "status": "wartend",
@@ -158,52 +158,16 @@
       "endTime": "16:36"
     },
     {
-      "id": "VF1",
+      "id": "VF4",
       "phase": "ko",
-      "round": "Viertelfinale 1",
-      "team1": "Platz 3",
-      "team2": "Platz 6",
+      "round": "Viertelfinale 4",
+      "team1": "2. Gruppe B",
+      "team2": "2. Gruppe C",
       "score1": null,
       "score2": null,
       "status": "wartend",
       "startTime": "16:40",
       "endTime": "16:48"
-    },
-    {
-      "id": "VF2",
-      "phase": "ko",
-      "round": "Viertelfinale 2",
-      "team1": "Platz 4",
-      "team2": "Platz 5",
-      "score1": null,
-      "score2": null,
-      "status": "wartend",
-      "startTime": "16:52",
-      "endTime": "17:00"
-    },
-    {
-      "id": "VF3",
-      "phase": "ko",
-      "round": "Viertelfinale 3",
-      "team1": "Platz 2",
-      "team2": "Sieger AF1",
-      "score1": null,
-      "score2": null,
-      "status": "wartend",
-      "startTime": "17:04",
-      "endTime": "17:12"
-    },
-    {
-      "id": "VF4",
-      "phase": "ko",
-      "round": "Viertelfinale 4",
-      "team1": "Platz 1",
-      "team2": "Sieger AF2",
-      "score1": null,
-      "score2": null,
-      "status": "wartend",
-      "startTime": "17:16",
-      "endTime": "17:24"
     },
     {
       "id": "pause2",
@@ -212,33 +176,33 @@
       "team1": "",
       "team2": "",
       "status": "pause",
-      "startTime": "17:24",
-      "endTime": "17:34",
+      "startTime": "16:48",
+      "endTime": "16:58",
       "pauseDuration": 10
     },
     {
       "id": "HF1",
       "phase": "ko",
       "round": "Halbfinale 1",
-      "team1": "Sieger VF3",
-      "team2": "Sieger VF1",
+      "team1": "Sieger VF1",
+      "team2": "Sieger VF3",
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "17:34",
-      "endTime": "17:42"
+      "startTime": "16:58",
+      "endTime": "17:06"
     },
     {
       "id": "HF2",
       "phase": "ko",
       "round": "Halbfinale 2",
-      "team1": "Sieger VF4",
-      "team2": "Sieger VF2",
+      "team1": "Sieger VF2",
+      "team2": "Sieger VF4",
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "17:46",
-      "endTime": "17:54"
+      "startTime": "17:10",
+      "endTime": "17:18"
     },
     {
       "id": "pause3",
@@ -247,8 +211,8 @@
       "team1": "",
       "team2": "",
       "status": "pause",
-      "startTime": "17:54",
-      "endTime": "18:04",
+      "startTime": "17:18",
+      "endTime": "17:28",
       "pauseDuration": 10
     },
     {
@@ -260,8 +224,8 @@
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "18:04",
-      "endTime": "18:12"
+      "startTime": "17:28",
+      "endTime": "17:36"
     }
   ]
 }

@@ -418,8 +418,6 @@ async function loadAdminData() {
                             <span class="score-edit">-</span>
                             <span class="time-edit">
                                 <input type="time" class="time-input" data-match="${match.id}" value="${match.startTime}" step="300">
-                                <input type="number" class="pause-input" data-match="${match.id}" value="${match.pauseDuration || ''}" min="1" max="60" style="width:60px;margin-left:8px;"> min
-                                <span class="pause-time-slot" style="display:block;font-size:0.95em;color:#1e3c72;margin-top:2px;">${timeSlot}</span>
                             </span>
                             <span class="status">Pause</span>
                             <span class="action"></span>

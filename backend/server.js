@@ -20,6 +20,9 @@ app.use(cors({
 }));
 app.use(bodyParser.json());
 
+// Statische Dateien ausliefern (Frontend)
+app.use(express.static(path.join(__dirname, '..', 'frontend', 'public')));
+
 const DATA_DIR = path.join(__dirname, 'data');
 const TEAMS_JSON = path.join(DATA_DIR, 'teams.json');
 const TEAMS_XLSX = path.join(__dirname, 'Teams.xlsx');
@@ -140,299 +143,22 @@ async function ensureTeamsJson() {
 
 // Hilfsfunktion: Matches generieren (neues Format: 2 Vorrundenspiele, dann K.o.-Phase)
 async function generateMatches(teams) {
-    const matches = { vorrunde: [], ko: [] };
-    const n = teams.length;
-    let matchNumber = 1;
-    const startTime = new Date('2025-07-05T14:00:00');
-    let currentTime = new Date(startTime);
-
-    if (n === 10) {
-        // Vorrunde: Logische Paarungen ohne direkte Wiederholungen
-        // Jedes Team spielt genau 2 Spiele gegen verschiedene Gegner
-        const vorrundenPaarungen = [
-            // Runde 1
-            [0, 1], [2, 3], [4, 5], [6, 7], [8, 9],
-            // Runde 2  
-            [0, 2], [1, 3], [4, 6], [5, 7], [8, 9]
-        ];
-        
-        // Vorrunde: 10 Spiele mit Zeiten (8min Spiel + 4min Pause = 12min pro Spiel)
-        vorrundenPaarungen.forEach((paarung, index) => {
-            const matchStart = new Date(startTime.getTime() + index * 12 * 60 * 1000); // 12 Minuten Abstand
-            const matchEnd = new Date(matchStart.getTime() + SPIELZEIT_MINUTEN * 60 * 1000); // 8 Minuten Spielzeit
-            matches.vorrunde.push({
-                id: `v${index + 1}`,
-                phase: 'vorrunde',
-                round: 'Vorrunde',
-                team1: teams[paarung[0]].name,
-                team2: teams[paarung[1]].name,
-                score1: null,
-                score2: null,
-                status: 'geplant',
-                startTime: `${matchStart.getHours().toString().padStart(2, '0')}:${matchStart.getMinutes().toString().padStart(2, '0')}`,
-                endTime: `${matchEnd.getHours().toString().padStart(2, '0')}:${matchEnd.getMinutes().toString().padStart(2, '0')}`
-            });
-        });
-        // Nach dem letzten Vorrundenspiel: 20 Minuten Pause (keine 4-Minuten-Pause mehr)
-        let currentTime = new Date(startTime.getTime() + 9 * 12 * 60 * 1000); // Start letzter Vorrunde
-        currentTime = new Date(currentTime.getTime() + SPIELZEIT_MINUTEN * 60 * 1000); // Ende letztes Vorrundenspiel
-        const pause1Start = new Date(currentTime);
-        const pause1End = new Date(pause1Start.getTime() + 20 * 60 * 1000);
-        matches.ko.push({
-            id: 'pause1',
-            phase: 'pause',
-            round: '20 Minuten Pause',
-            team1: '',
-            team2: '',
-            status: 'pause',
-            startTime: `${pause1Start.getHours().toString().padStart(2, '0')}:${pause1Start.getMinutes().toString().padStart(2, '0')}`,
-            endTime: `${pause1End.getHours().toString().padStart(2, '0')}:${pause1End.getMinutes().toString().padStart(2, '0')}`,
-            pauseDuration: 20
-        });
-        currentTime = new Date(pause1End);
-
-        // KO-Spiele erstellen entsprechend dem neuen Muster
-        const koMatches = [
-            { id: 'AF1', round: 'Achtelfinale 1', team1: 'Platz 7', team2: 'Platz 10' },
-            { id: 'AF2', round: 'Achtelfinale 2', team1: 'Platz 8', team2: 'Platz 9' },
-            { id: 'VF1', round: 'Viertelfinale 1', team1: 'Platz 3', team2: 'Platz 6' },
-            { id: 'VF2', round: 'Viertelfinale 2', team1: 'Platz 4', team2: 'Platz 5' },
-            { id: 'VF3', round: 'Viertelfinale 3', team1: 'Platz 2', team2: 'Sieger AF1' },
-            { id: 'VF4', round: 'Viertelfinale 4', team1: 'Platz 1', team2: 'Sieger AF2' },
-            { id: 'HF1', round: 'Halbfinale 1', team1: 'Sieger VF3', team2: 'Sieger VF1' },
-            { id: 'HF2', round: 'Halbfinale 2', team1: 'Sieger VF4', team2: 'Sieger VF2' },
-            { id: 'F1', round: 'Finale', team1: 'Sieger HF1', team2: 'Sieger HF2' }
-        ];
-        // KO-Spiele mit Pausen einfügen
-        koMatches.forEach((match, idx) => {
-            // Spiel einfügen
-            const matchStart = new Date(currentTime);
-            const matchEnd = new Date(matchStart.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
-            matches.ko.push({
-                id: match.id,
-                phase: 'ko',
-                round: match.round,
-                team1: match.team1,
-                team2: match.team2,
-                score1: null,
-                score2: null,
-                status: 'wartend',
-                startTime: `${matchStart.getHours().toString().padStart(2, '0')}:${matchStart.getMinutes().toString().padStart(2, '0')}`,
-                endTime: `${matchEnd.getHours().toString().padStart(2, '0')}:${matchEnd.getMinutes().toString().padStart(2, '0')}`
-            });
-            // Nach jedem KO-Spiel außer nach VF4 und HF2: PAUSENZEIT_MINUTEN Minuten Pause
-            if (match.id === 'VF4') {
-                // Nach VF4: 10 Minuten Pause
-                const pause2Start = new Date(matchEnd.getTime());
-                const pause2End = new Date(pause2Start.getTime() + 10 * 60 * 1000);
-                matches.ko.push({
-                    id: 'pause2',
-                    phase: 'pause',
-                    round: '10 Minuten Pause',
-                    team1: '',
-                    team2: '',
-                    status: 'pause',
-                    startTime: `${pause2Start.getHours().toString().padStart(2, '0')}:${pause2Start.getMinutes().toString().padStart(2, '0')}`,
-                    endTime: `${pause2End.getHours().toString().padStart(2, '0')}:${pause2End.getMinutes().toString().padStart(2, '0')}`,
-                    pauseDuration: 10
-                });
-                currentTime = new Date(pause2End);
-            } else if (match.id === 'HF2') {
-                // Nach HF2: 10 Minuten Pause
-                const pause3Start = new Date(matchEnd.getTime());
-                const pause3End = new Date(pause3Start.getTime() + 10 * 60 * 1000);
-                matches.ko.push({
-                    id: 'pause3',
-                    phase: 'pause',
-                    round: '10 Minuten Pause',
-                    team1: '',
-                    team2: '',
-                    status: 'pause',
-                    startTime: `${pause3Start.getHours().toString().padStart(2, '0')}:${pause3Start.getMinutes().toString().padStart(2, '0')}`,
-                    endTime: `${pause3End.getHours().toString().padStart(2, '0')}:${pause3End.getMinutes().toString().padStart(2, '0')}`,
-                    pauseDuration: 10
-                });
-                currentTime = new Date(pause3End);
-            } else {
-                // Nach allen anderen KO-Spielen: PAUSENZEIT_MINUTEN Minuten Pause
-                currentTime = new Date(matchEnd.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
-            }
-        });
-        return matches;
-    }
-
-    if (n === 9) {
-        // 3 Gruppen à 3 Teams
-        const gruppen = [teams.slice(0, 3), teams.slice(3, 6), teams.slice(6, 9)];
-        const gruppenNamen = ['A', 'B', 'C'];
-        // Alle Gruppenspiele vorbereiten
-        let gruppenSpiele = [];
-        gruppen.forEach((gruppe, gIdx) => {
-            // Jeder gegen jeden in der Gruppe (3 Spiele pro Gruppe)
-            let spiele = [];
-            for (let i = 0; i < 3; i++) {
-                for (let j = i + 1; j < 3; j++) {
-                    spiele.push({
-                        gruppe: gruppenNamen[gIdx],
-                        team1: gruppe[i].name,
-                        team2: gruppe[j].name
-                    });
-                }
-            }
-            gruppenSpiele.push(spiele);
-        });
-        // ABCABCABC: Immer ein Spiel aus A, dann B, dann C, dann wieder A, B, C ...
-        let vorrundenSpiele = [];
-        for (let r = 0; r < 3; r++) { // 3 Runden pro Gruppe
-            for (let g = 0; g < 3; g++) { // 3 Gruppen
-                if (gruppenSpiele[g][r]) vorrundenSpiele.push(gruppenSpiele[g][r]);
-            }
-        }
-        // Debug-Ausgabe
-        console.log('Vorrunden-Spiele (ABCABCABC):', vorrundenSpiele.map(s => s.gruppe + ': ' + s.team1 + ' vs ' + s.team2));
-        vorrundenSpiele.forEach((spiel, idx) => {
-            matches.vorrunde.push({
-                id: `g${spiel.gruppe}_${spiel.team1}_vs_${spiel.team2}`,
-                phase: 'vorrunde',
-                round: `Gruppe ${spiel.gruppe}`,
-                team1: spiel.team1,
-                team2: spiel.team2,
-                score1: null,
-                score2: null,
-                status: 'geplant',
-                startTime: idx === 0 ? '14:00' : null,
-                endTime: null
-            });
-        });
-        // Nach Vorrunde: 20 Minuten Pause
-        matches.ko.push({
-            id: 'pause1', phase: 'pause', round: '20 Minuten Pause', team1: '', team2: '', status: 'pause',
-            startTime: null,
-            endTime: null,
-            pauseDuration: 20
-        });
-        // KO-Spiele: Viertelfinale (VF1–VF4), Halbfinale (HF1, HF2), Finale (F1)
-        const koMatches = [
-            { id: 'VF1', round: 'Viertelfinale 1', team1: '1. Gruppe A', team2: '2. Gruppe B' },
-            { id: 'VF2', round: 'Viertelfinale 2', team1: '1. Gruppe B', team2: '2. Gruppe C' },
-            { id: 'VF3', round: 'Viertelfinale 3', team1: '1. Gruppe C', team2: 'Bester Dritter' },
-            { id: 'VF4', round: 'Viertelfinale 4', team1: '2. Gruppe A', team2: 'Zweitbester Dritter' },
-            { id: 'HF1', round: 'Halbfinale 1', team1: 'Sieger VF1', team2: 'Sieger VF3' },
-            { id: 'HF2', round: 'Halbfinale 2', team1: 'Sieger VF2', team2: 'Sieger VF4' },
-            { id: 'F1', round: 'Finale', team1: 'Sieger HF1', team2: 'Sieger HF2' }
-        ];
-        koMatches.forEach((match) => {
-            matches.ko.push({
-                id: match.id,
-                phase: 'ko',
-                round: match.round,
-                team1: match.team1,
-                team2: match.team2,
-                score1: null,
-                score2: null,
-                status: 'wartend',
-                startTime: null,
-                endTime: null
-            });
-        });
-        return matches;
-    }
-
-    if (n === 8) {
-        // 2 Gruppen à 4 Teams
-        const gruppen = [teams.slice(0, 4), teams.slice(4, 8)];
-        const gruppenNamen = ['A', 'B'];
-        // Round-Robin-Paarungen für 4 Teams (ergibt 3 Spieltage à 2 Spiele pro Gruppe)
-        function roundRobinBlockOrder(gruppe, teams) {
-            // Für 4 Teams: 3 Spieltage, je 2 Spiele pro Spieltag
-            // Spieltage:
-            // 1: Team 1 vs Team 4, Team 2 vs Team 3
-            // 2: Team 1 vs Team 3, Team 4 vs Team 2
-            // 3: Team 1 vs Team 2, Team 3 vs Team 4
-            return [
-                [ { gruppe, team1: teams[0].name, team2: teams[3].name }, { gruppe, team1: teams[1].name, team2: teams[2].name } ],
-                [ { gruppe, team1: teams[0].name, team2: teams[2].name }, { gruppe, team1: teams[3].name, team2: teams[1].name } ],
-                [ { gruppe, team1: teams[0].name, team2: teams[1].name }, { gruppe, team1: teams[2].name, team2: teams[3].name } ]
-            ];
-        }
-        const blocksA = roundRobinBlockOrder('A', gruppen[0]); // 3 Blöcke à 2 Spiele
-        const blocksB = roundRobinBlockOrder('B', gruppen[1]);
-        // Jetzt AABB-Muster blockweise zusammenfügen
-        let vorrundenSpiele = [];
-        for (let i = 0; i < 3; i++) {
-            vorrundenSpiele.push(...blocksA[i]);
-            vorrundenSpiele.push(...blocksB[i]);
-        }
-        // Debug-Ausgabe
-        console.log('Vorrunden-Spiele (AABB, kein Team doppelt im Block):', vorrundenSpiele.map(s => s.gruppe + ': ' + s.team1 + ' vs ' + s.team2));
-        vorrundenSpiele.forEach((spiel, idx) => {
-            const matchStart = new Date(currentTime.getTime() + idx * 12 * 60 * 1000);
-            const matchEnd = new Date(matchStart.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
-            matches.vorrunde.push({
-                id: `g${spiel.gruppe}_${spiel.team1}_vs_${spiel.team2}`,
-                phase: 'vorrunde',
-                round: `Gruppe ${spiel.gruppe}`,
-                team1: spiel.team1,
-                team2: spiel.team2,
-                score1: null,
-                score2: null,
-                status: 'geplant',
-                startTime: `${matchStart.getHours().toString().padStart(2, '0')}:${matchStart.getMinutes().toString().padStart(2, '0')}`,
-                endTime: `${matchEnd.getHours().toString().padStart(2, '0')}:${matchEnd.getMinutes().toString().padStart(2, '0')}`
-            });
-        });
-        // Nach Vorrunde: 20 Minuten Pause
-        let pauseStart = new Date(currentTime.getTime() + vorrundenSpiele.length * 12 * 60 * 1000);
-        let pauseEnd = new Date(pauseStart.getTime() + 20 * 60 * 1000);
-        matches.ko.push({
-            id: 'pause1', phase: 'pause', round: '20 Minuten Pause', team1: '', team2: '', status: 'pause',
-            startTime: `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`,
-            endTime: `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`,
-            pauseDuration: 20
-        });
-        currentTime = new Date(pauseEnd);
-        // Halbfinale 1
-        let hf1Start = new Date(currentTime);
-        let hf1End = new Date(hf1Start.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
-        matches.ko.push({
-            id: 'HF1', phase: 'ko', round: 'Halbfinale 1',
-            team1: '1. Gruppe A', team2: '2. Gruppe B',
-            score1: null, score2: null, status: 'wartend',
-            startTime: `${hf1Start.getHours().toString().padStart(2, '0')}:${hf1Start.getMinutes().toString().padStart(2, '0')}`,
-            endTime: `${hf1End.getHours().toString().padStart(2, '0')}:${hf1End.getMinutes().toString().padStart(2, '0')}`
-        });
-        currentTime = new Date(hf1End.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
-        // Halbfinale 2
-        let hf2Start = new Date(currentTime);
-        let hf2End = new Date(hf2Start.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
-        matches.ko.push({
-            id: 'HF2', phase: 'ko', round: 'Halbfinale 2',
-            team1: '1. Gruppe B', team2: '2. Gruppe A',
-            score1: null, score2: null, status: 'wartend',
-            startTime: `${hf2Start.getHours().toString().padStart(2, '0')}:${hf2Start.getMinutes().toString().padStart(2, '0')}`,
-            endTime: `${hf2End.getHours().toString().padStart(2, '0')}:${hf2End.getMinutes().toString().padStart(2, '0')}`
-        });
-        currentTime = new Date(hf2End.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
-        // Finale
-        let f1Start = new Date(currentTime);
-        let f1End = new Date(f1Start.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
-        matches.ko.push({
-            id: 'F1', phase: 'ko', round: 'Finale',
-            team1: 'Sieger HF1', team2: 'Sieger HF2',
-            score1: null, score2: null, status: 'wartend',
-            startTime: `${f1Start.getHours().toString().padStart(2, '0')}:${f1End.getMinutes().toString().padStart(2, '0')}`,
-            endTime: `${f1End.getHours().toString().padStart(2, '0')}:${f1End.getMinutes().toString().padStart(2, '0')}`
-        });
-        return matches;
-    }
-
-    // Fallback: Weniger als 8 Teams (nicht unterstützt)
+    console.log("generateMatches: Teamanzahl", teams.length);
+    
+    // Verwende die neue generateVorrundeAndKO Funktion
+    const { vorrunde, ko } = generateVorrundeAndKO(teams);
+    let matches = { vorrunde, ko };
+    
+    // Zeitberechnung für alle Spiele
+    matches = await recalculateMatchTimesFile(matches);
+    
     return matches;
 }
 
 // Beim ersten Start: Matches und Standings anlegen
 async function ensureMatchesAndStandings() {
-    const teams = await fs.readJson(TEAMS_JSON).catch(() => []);
+    try {
+        const teams = await fs.readJson(TEAMS_JSON);
     if (!fs.existsSync(MATCHES_JSON)) {
         const matches = await generateMatches(teams);
         await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
@@ -443,14 +169,19 @@ async function ensureMatchesAndStandings() {
     }
     
     // KO-Phase initial aktualisieren
-    let standings = await fs.readJson(STANDINGS_JSON).catch(() => []);
+        let standings = await fs.readJson(STANDINGS_JSON);
     await updateKOMatches(standings);
+    } catch (error) {
+        console.error('Fehler beim Initialisieren der Matches und Standings:', error);
+    }
 }
 
 // Hilfsfunktion: Standings komplett neu berechnen
 async function recalculateStandings() {
-    let matches = await fs.readJson(MATCHES_JSON).catch(() => ({ vorrunde: [], ko: [] }));
-    let teams = await fs.readJson(TEAMS_JSON).catch(() => []);
+    try {
+        let matches = await fs.readJson(MATCHES_JSON);
+        let teams = await fs.readJson(TEAMS_JSON);
+        
     // Gruppentabellen für 8/9 Teams
     if (teams.length === 8 || teams.length === 9) {
         let gruppen = {};
@@ -496,10 +227,13 @@ async function recalculateStandings() {
             });
             result[gruppe] = standings;
         });
+            
+            // Speichere gruppierte Standings
         await fs.writeJson(STANDINGS_JSON, result, { spaces: 2 });
         await updateKOMatches(result);
         return;
     }
+        
     // Standard: Einzel-Tabelle für 10 Teams
     let standings = teams.map(t => ({
         name: t.name,
@@ -534,49 +268,74 @@ async function recalculateStandings() {
         if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
         return a.name.localeCompare(b.name);
     });
+        
     await fs.writeJson(STANDINGS_JSON, standings, { spaces: 2 });
     await updateKOMatches(standings);
+    } catch (error) {
+        console.error('Fehler beim Neuberechnen der Standings:', error);
+    }
 }
 
 // --- KO-Logik für 9 Teams ---
 async function updateKOMatches9Teams(standings, matches) {
+    try {
     const gruppen = Object.keys(standings);
     const gruppeA = standings['A'];
     const gruppeB = standings['B'];
     const gruppeC = standings['C'];
-    let sieger = [gruppeA[0], gruppeB[0], gruppeC[0]];
-    let zweitplatzierte = [gruppeA[1], gruppeB[1], gruppeC[1]];
-    sieger.sort((a, b) => {
+        // Alle Teams sammeln
+        let alleTeams = [...gruppeA, ...gruppeB, ...gruppeC];
+        // Nach Punkten, Tordifferenz, Tore sortieren
+        const sortFn = (a, b) => {
         if (b.points !== a.points) return b.points - a.points;
         const diffA = a.goalsFor - a.goalsAgainst;
         const diffB = b.goalsFor - b.goalsAgainst;
         if (diffB !== diffA) return diffB - diffA;
         if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
         return a.name.localeCompare(b.name);
-    });
-    let besterZweiter = zweitplatzierte.sort((a, b) => {
-        if (b.points !== a.points) return b.points - a.points;
-        const diffA = a.goalsFor - a.goalsAgainst;
-        const diffB = b.goalsFor - b.goalsAgainst;
-        if (diffB !== diffA) return diffB - diffA;
-        if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-        return a.name.localeCompare(b.name);
-    })[0];
-    // Prüfe, ob alle Gruppenspiele abgeschlossen sind UND ob die KO-Teams noch Platzhalter sind
+        };
+        // Gruppenerste, -zweite, -dritte sortieren
+        let erste = [gruppeA[0], gruppeB[0], gruppeC[0]].sort(sortFn);
+        let zweite = [gruppeA[1], gruppeB[1], gruppeC[1]].sort(sortFn);
+        let dritte = [gruppeA[2], gruppeB[2], gruppeC[2]].sort(sortFn);
+        // 2 beste Dritte
+        let besteDritte = [...dritte].sort(sortFn).slice(0, 2);
+        // Prüfe, ob alle Gruppenspiele abgeschlossen sind
     const alleGruppenFertig = gruppen.every(gruppe => {
         const groupMatches = (matches.vorrunde || []).filter(m => m.round && m.round.includes(gruppe));
         return groupMatches.every(m => m.status === 'completed');
     });
     if (alleGruppenFertig) {
+            // Paarungen:
+            // VF1: Bester Erster vs. Zweitbester Dritter
+            // VF2: Zweitbester Erster vs. Bester Dritter
+            // VF3: Dritter Erster vs. Schwächster Zweiter
+            // VF4: Bester Zweiter vs. Zweitbester Zweiter
         matches.ko.forEach(match => {
             if (match.phase !== 'ko') return;
+                if (match.id === 'VF1') {
+                    match.team1 = erste[0]?.name || '';
+                    match.team2 = besteDritte[1]?.name || '';
+                }
+                if (match.id === 'VF2') {
+                    match.team1 = erste[1]?.name || '';
+                    match.team2 = besteDritte[0]?.name || '';
+                }
+                if (match.id === 'VF3') {
+                    match.team1 = erste[2]?.name || '';
+                    match.team2 = zweite[2]?.name || '';
+                }
+                if (match.id === 'VF4') {
+                    match.team1 = zweite[0]?.name || '';
+                    match.team2 = zweite[1]?.name || '';
+                }
             if (match.id === 'HF1') {
-                match.team1 = sieger[0]?.name || 'Bester Gruppensieger';
-                match.team2 = besterZweiter?.name || 'Bester Zweiter';
+                    match.team1 = 'Sieger VF1';
+                    match.team2 = 'Sieger VF4';
             }
             if (match.id === 'HF2') {
-                match.team1 = sieger[1]?.name || '2. Gruppensieger';
-                match.team2 = sieger[2]?.name || '3. Gruppensieger';
+                    match.team1 = 'Sieger VF2';
+                    match.team2 = 'Sieger VF3';
             }
             if (match.id === 'F1') {
                 match.team1 = 'Sieger HF1';
@@ -584,11 +343,15 @@ async function updateKOMatches9Teams(standings, matches) {
             }
         });
         await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+        }
+    } catch (error) {
+        console.error('Fehler beim Update der KO-Matches für 9 Teams:', error);
     }
 }
 // ... existing code ...
 // --- KO-Logik für 10 Teams ---
 async function updateKOMatches10Teams(standings, matches) {
+    try {
     // Prüfe, ob alle Vorrundenspiele abgeschlossen sind UND ob die KO-Teams noch Platzhalter sind
     const alleVorrundeFertig = (matches.vorrunde || []).every(m => m.status === 'completed');
     if (alleVorrundeFertig) {
@@ -641,11 +404,17 @@ async function updateKOMatches10Teams(standings, matches) {
                 match.team2 = 'Sieger HF2';
             }
         });
+            
+            // Speichere aktualisierte Matches
         await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+        }
+    } catch (error) {
+        console.error('Fehler beim Update der KO-Matches für 10 Teams:', error);
     }
 }
 
 async function advanceKOMatches10Teams(matches) {
+    try {
     // Achtelfinale → Viertelfinale
     const AF1 = matches.ko.find(m => m.id === 'AF1');
     const AF2 = matches.ko.find(m => m.id === 'AF2');
@@ -717,13 +486,25 @@ async function advanceKOMatches10Teams(matches) {
         }
         if (F1.status !== 'completed') F1.status = 'geplant';
     }
+        
+        // Speichere aktualisierte Matches
     await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+    } catch (error) {
+        console.error('Fehler beim Advance der KO-Matches für 10 Teams:', error);
+    }
 }
 // ... existing code ...
 // updateKOMatches: jetzt getrennt für 8, 9, 10 Teams
 async function updateKOMatches(standings) {
-    let matches = await fs.readJson(MATCHES_JSON).catch(() => ({ vorrunde: [], ko: [] }));
-    const teams = await fs.readJson(TEAMS_JSON).catch(() => []);
+    try {
+        if (!standings || typeof standings !== 'object') {
+            console.error("updateKOMatches: Ungültige Standings übergeben!", standings);
+            return;
+        }
+        let matches = await fs.readJson(MATCHES_JSON);
+        const teams = await fs.readJson(TEAMS_JSON);
+        console.log("updateKOMatches: Standings", standings);
+        console.log("KO-Spiele vor Update", matches.ko);
     if (teams.length === 8 && standings && typeof standings === 'object' && !Array.isArray(standings)) {
         // Prüfe, ob alle Gruppenspiele abgeschlossen sind
         const gruppen = Object.keys(standings);
@@ -751,7 +532,10 @@ async function updateKOMatches(standings) {
                 F1.team1 = 'Sieger HF1';
                 F1.team2 = 'Sieger HF2';
             }
+                
+                // Speichere aktualisierte Matches
             await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+                console.log("KO-Spiele nach Update", matches.ko);
         }
         return;
     }
@@ -763,12 +547,16 @@ async function updateKOMatches(standings) {
         await updateKOMatches10Teams(standings, matches);
         return;
     }
+    } catch (error) {
+        console.error('Fehler in updateKOMatches:', error);
 }
-// ... existing code ...
+}
+
 // advanceKOMatches: jetzt getrennt für 8, 9, 10 Teams
 async function advanceKOMatches() {
-    let matches = await fs.readJson(MATCHES_JSON).catch(() => ({ vorrunde: [], ko: [] }));
-    const teams = await fs.readJson(TEAMS_JSON).catch(() => []);
+    try {
+        let matches = await fs.readJson(MATCHES_JSON);
+        const teams = await fs.readJson(TEAMS_JSON);
     if (teams.length === 8) {
         // Nur Finale dynamisch setzen
         const HF1 = matches.ko.find(m => m.id === 'HF1');
@@ -789,27 +577,36 @@ async function advanceKOMatches() {
             }
             if (F1.status !== 'completed') F1.status = 'geplant';
         }
+            
+            // Speichere aktualisierte Matches
         await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
         return;
     }
     if (teams.length === 9) {
-        // Nur Finale dynamisch setzen
+        // Viertelfinale
+        const VF1 = matches.ko.find(m => m.id === 'VF1');
+        const VF2 = matches.ko.find(m => m.id === 'VF2');
+        const VF3 = matches.ko.find(m => m.id === 'VF3');
+        const VF4 = matches.ko.find(m => m.id === 'VF4');
         const HF1 = matches.ko.find(m => m.id === 'HF1');
         const HF2 = matches.ko.find(m => m.id === 'HF2');
         const F1 = matches.ko.find(m => m.id === 'F1');
+        // HF1: Sieger VF1 vs Sieger VF4
+        if (HF1) {
+            HF1.team1 = (VF1 && VF1.status === 'completed') ? (VF1.score1 > VF1.score2 ? VF1.team1 : VF1.team2) : 'Sieger VF1';
+            HF1.team2 = (VF4 && VF4.status === 'completed') ? (VF4.score1 > VF4.score2 ? VF4.team1 : VF4.team2) : 'Sieger VF4';
+            if (HF1.status !== 'completed') HF1.status = 'geplant';
+        }
+        // HF2: Sieger VF2 vs Sieger VF3
+        if (HF2) {
+            HF2.team1 = (VF2 && VF2.status === 'completed') ? (VF2.score1 > VF2.score2 ? VF2.team1 : VF2.team2) : 'Sieger VF2';
+            HF2.team2 = (VF3 && VF3.status === 'completed') ? (VF3.score1 > VF3.score2 ? VF3.team1 : VF3.team2) : 'Sieger VF3';
+            if (HF2.status !== 'completed') HF2.status = 'geplant';
+        }
+        // Finale: Sieger HF1 vs Sieger HF2
         if (F1) {
-            if (HF1 && HF1.status === 'completed') {
-                const winnerHF1 = HF1.score1 > HF1.score2 ? HF1.team1 : HF1.team2;
-                F1.team1 = winnerHF1;
-            } else {
-                F1.team1 = 'Sieger HF1';
-            }
-            if (HF2 && HF2.status === 'completed') {
-                const winnerHF2 = HF2.score1 > HF2.score2 ? HF2.team1 : HF2.team2;
-                F1.team2 = winnerHF2;
-            } else {
-                F1.team2 = 'Sieger HF2';
-            }
+            F1.team1 = (HF1 && HF1.status === 'completed') ? (HF1.score1 > HF1.score2 ? HF1.team1 : HF1.team2) : 'Sieger HF1';
+            F1.team2 = (HF2 && HF2.status === 'completed') ? (HF2.score1 > HF2.score2 ? HF2.team1 : HF2.team2) : 'Sieger HF2';
             if (F1.status !== 'completed') F1.status = 'geplant';
         }
         await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
@@ -818,6 +615,9 @@ async function advanceKOMatches() {
     if (teams.length === 10) {
         await advanceKOMatches10Teams(matches);
         return;
+        }
+    } catch (error) {
+        console.error('Fehler in advanceKOMatches:', error);
     }
 }
 // ... existing code ...
@@ -828,70 +628,90 @@ async function loadSettings() {
         const settings = await fs.readJson(SETTINGS_JSON);
         if (typeof settings.spielzeit === 'number') SPIELZEIT_MINUTEN = settings.spielzeit;
         if (typeof settings.pausenzeit === 'number') PAUSENZEIT_MINUTEN = settings.pausenzeit;
-    } catch (e) {}
+    } catch (e) {
+        // Standardwerte verwenden, falls keine Settings-Datei existiert
+        SPIELZEIT_MINUTEN = 8;
+        PAUSENZEIT_MINUTEN = 4;
+    }
 }
 
 // Hilfsfunktion: Spielzeit und Pausenzeit speichern
 async function saveSettings(newSettings) {
+    try {
     let settings = {};
-    try { settings = await fs.readJson(SETTINGS_JSON); } catch (e) {}
+        try { 
+            settings = await fs.readJson(SETTINGS_JSON); 
+        } catch (e) {
+            settings = { spielzeit: 8, pausenzeit: 4 };
+        }
     settings = { ...settings, ...newSettings };
     await fs.writeJson(SETTINGS_JSON, settings, { spaces: 2 });
+    } catch (error) {
+        console.error('Fehler beim Speichern der Settings:', error);
+    }
 }
 
 // Hilfsfunktion: Spielplan fortlaufend neu berechnen (Startzeiten, Endzeiten, Pausen)
 async function recalculateMatchTimes(matches, startFromMatchId = null) {
+    try {
     let allMatches = [...matches.vorrunde, ...matches.ko];
-    // Immer ALLE Zeiten neu berechnen, unabhängig von vorhandenen Werten
-    let currentTime = new Date('2025-07-05T14:00:00');
-    for (let i = 0; i < allMatches.length; i++) {
-        let m = allMatches[i];
-        // Pause nach Vorrunde/letztem Gruppenspiel
-        if (m.phase === 'pause' && (m.id === 'pause1')) {
-            let pauseLen = 20;
-            const pauseStart = new Date(currentTime);
-            const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
-            m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
-            m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
-            currentTime = new Date(pauseEnd.getTime());
-            continue;
-        }
-        // Pause vor Finale (immer 10 Minuten)
-        if (m.phase === 'pause' && (m.id === 'pause2' || m.id === 'pause3')) {
-            let pauseLen = 10;
-            const pauseStart = new Date(currentTime);
-            const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
-            m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
-            m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
-            currentTime = new Date(pauseEnd.getTime());
-            continue;
-        }
-        // Normale Pause
-        if (m.phase === 'pause') {
-            let pauseLen = PAUSENZEIT_MINUTEN;
-            const pauseStart = new Date(currentTime);
-            const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
-            m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
-            m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
-            currentTime = new Date(pauseEnd.getTime());
-            continue;
-        }
-        // Spiel
-        m.startTime = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`;
-        const matchEnd = new Date(currentTime.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
-        m.endTime = `${matchEnd.getHours().toString().padStart(2, '0')}:${matchEnd.getMinutes().toString().padStart(2, '0')}`;
-        currentTime = new Date(matchEnd.getTime());
-        // Nach jedem Spiel: Pause, außer nach dem letzten
-        const next = allMatches[i + 1];
-        if (next && next.phase === 'pause' && (next.id === 'pause1' || next.id === 'pause2' || next.id === 'pause3')) {
-            continue;
-        }
-        if (i === allMatches.length - 1) break;
-        currentTime = new Date(currentTime.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
+        // Immer ALLE Zeiten neu berechnen, unabhängig von vorhandenen Werten
+        let currentTime = new Date('2025-07-05T14:00:00');
+        for (let i = 0; i < allMatches.length; i++) {
+            let m = allMatches[i];
+            // Pause nach Vorrunde/letztem Gruppenspiel
+            if (m.phase === 'pause' && (m.id === 'pause1')) {
+                let pauseLen = 20;
+                const pauseStart = new Date(currentTime);
+                const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
+                m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
+                m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
+                currentTime = new Date(pauseEnd.getTime());
+                continue;
+            }
+            // Pause vor Finale (immer 10 Minuten)
+            if (m.phase === 'pause' && (m.id === 'pause2' || m.id === 'pause3')) {
+                let pauseLen = 10;
+                const pauseStart = new Date(currentTime);
+                const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
+                m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
+                m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
+                currentTime = new Date(pauseEnd.getTime());
+                continue;
+            }
+            // Normale Pause
+            if (m.phase === 'pause') {
+                let pauseLen = PAUSENZEIT_MINUTEN;
+                const pauseStart = new Date(currentTime);
+                const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
+                m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
+                m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
+                currentTime = new Date(pauseEnd.getTime());
+                continue;
+            }
+            // Spiel
+            m.startTime = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`;
+            const matchEnd = new Date(currentTime.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
+            m.endTime = `${matchEnd.getHours().toString().padStart(2, '0')}:${matchEnd.getMinutes().toString().padStart(2, '0')}`;
+            currentTime = new Date(matchEnd.getTime());
+            // Nach jedem Spiel: Pause, außer nach dem letzten
+            const next = allMatches[i + 1];
+            if (next && next.phase === 'pause' && (next.id === 'pause1' || next.id === 'pause2' || next.id === 'pause3')) {
+                continue;
+            }
+            if (i === allMatches.length - 1) break;
+            currentTime = new Date(currentTime.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
     }
     matches.vorrunde = allMatches.filter(m => m.phase === 'vorrunde');
     matches.ko = allMatches.filter(m => m.phase !== 'vorrunde');
+        
+        // Speichere aktualisierte Matches
+        await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+        return matches;
+    } catch (error) {
+        console.error('Fehler beim Neuberechnen der Spielzeiten:', error);
     return matches;
+    }
 }
 
 // API: Spielzeit abfragen
@@ -902,6 +722,7 @@ app.get('/api/settings/spielzeit', async (req, res) => {
 
 // API: Spielzeit setzen (Admin)
 app.post('/api/settings/spielzeit', requireAuth, async (req, res) => {
+    try {
     const { spielzeit } = req.body;
     if (typeof spielzeit !== 'number' || spielzeit < 1 || spielzeit > 60) {
         return res.status(400).json({ success: false, message: 'Ungültige Spielzeit' });
@@ -910,17 +731,14 @@ app.post('/api/settings/spielzeit', requireAuth, async (req, res) => {
     await saveSettings({ spielzeit });
     resetTimer();
     await saveTimerState();
-    // === NEU: Spielplan neu berechnen und in MongoDB speichern ===
-    const allMatches = await Match.find();
-    const matchesObj = {
-        vorrunde: allMatches.filter(m => m.phase === 'vorrunde'),
-        ko: allMatches.filter(m => m.phase !== 'vorrunde')
-    };
-    const updated = await recalculateMatchTimes(matchesObj);
-    for (const m of [...updated.vorrunde, ...updated.ko]) {
-        await Match.updateOne({ id: m.id }, { $set: { startTime: m.startTime, endTime: m.endTime, pauseDuration: m.pauseDuration } });
-    }
+        // === NEU: Spielplan neu berechnen und in Datei speichern ===
+        const matches = await fs.readJson(MATCHES_JSON);
+        const updated = await recalculateMatchTimes(matches);
     res.json({ success: true });
+    } catch (error) {
+        console.error('Fehler beim Setzen der Spielzeit:', error);
+        res.status(500).json({ success: false, message: 'Fehler beim Setzen der Spielzeit' });
+    }
 });
 
 // API: Pausenzeit abfragen
@@ -931,31 +749,30 @@ app.get('/api/settings/pausenzeit', async (req, res) => {
 
 // API: Pausenzeit setzen (Admin)
 app.post('/api/settings/pausenzeit', requireAuth, async (req, res) => {
+    try {
     const { pausenzeit } = req.body;
     if (typeof pausenzeit !== 'number' || pausenzeit < 1 || pausenzeit > 60) {
         return res.status(400).json({ success: false, message: 'Ungültige Pausenzeit' });
     }
     PAUSENZEIT_MINUTEN = pausenzeit;
     await saveSettings({ pausenzeit });
-    // === NEU: Spielplan neu berechnen und in MongoDB speichern ===
-    const allMatches = await Match.find();
-    const matchesObj = {
-        vorrunde: allMatches.filter(m => m.phase === 'vorrunde'),
-        ko: allMatches.filter(m => m.phase !== 'vorrunde')
-    };
-    const updated = await recalculateMatchTimes(matchesObj);
-    for (const m of [...updated.vorrunde, ...updated.ko]) {
-        await Match.updateOne({ id: m.id }, { $set: { startTime: m.startTime, endTime: m.endTime, pauseDuration: m.pauseDuration } });
-    }
+        // === NEU: Spielplan neu berechnen und in Datei speichern ===
+        const matches = await fs.readJson(MATCHES_JSON);
+        const updated = await recalculateMatchTimes(matches);
     res.json({ success: true });
+    } catch (error) {
+        console.error('Fehler beim Setzen der Pausenzeit:', error);
+        res.status(500).json({ success: false, message: 'Fehler beim Setzen der Pausenzeit' });
+    }
 });
 
 // API: Teams abrufen
 app.get('/api/teams', async (req, res) => {
     try {
-        const teams = await Team.find().sort({ _id: 1 });
+        const teams = await fs.readJson(TEAMS_JSON);
         res.json(teams);
     } catch (error) {
+        console.error('Fehler beim Laden der Teams:', error);
         res.status(500).json({ error: 'Fehler beim Laden der Teams' });
     }
 });
@@ -963,12 +780,13 @@ app.get('/api/teams', async (req, res) => {
 // API: Matches abrufen
 app.get('/api/matches', async (req, res) => {
     try {
-        const all = await Match.find();
+        const matches = await fs.readJson(MATCHES_JSON);
         res.json({
-            vorrunde: all.filter(m => m.phase === 'vorrunde'),
-            ko: all.filter(m => m.phase === 'ko' || m.phase === 'pause')
+            vorrunde: matches.vorrunde || [],
+            ko: (matches.ko || []).filter(m => m.phase === 'ko' || m.phase === 'pause')
         });
     } catch (error) {
+        console.error('Fehler beim Laden der Matches:', error);
         res.status(500).json({ error: 'Fehler beim Laden der Matches' });
     }
 });
@@ -976,22 +794,51 @@ app.get('/api/matches', async (req, res) => {
 // API: Standings abrufen (jetzt gruppenbasiert für 8/9 Teams)
 app.get('/api/standings', async (req, res) => {
     try {
-        const teams = await Team.find();
-        const standingsArr = await Standing.find();
+        const teams = await fs.readJson(TEAMS_JSON);
+        let standings = await fs.readJson(STANDINGS_JSON);
+        // Format prüfen und ggf. automatisch reparieren
+        if (
+            (teams.length === 8 && (!standings.A || !standings.B)) ||
+            (teams.length === 9 && (!standings.A || !standings.B || !standings.C)) ||
+            (teams.length === 10 && !Array.isArray(standings))
+        ) {
+            // Automatisch neu generieren
+            await regenerateScheduleAndStandings();
+            standings = await fs.readJson(STANDINGS_JSON);
+        }
         // Gruppierte Standings für 8/9 Teams
         if (teams.length === 8 || teams.length === 9) {
-            let standings = {};
-            standingsArr.forEach(s => {
-                let gruppe = s.gruppe || 'X'; // Teams ohne Gruppe in "X"
-                if (!standings[gruppe]) standings[gruppe] = [];
-                standings[gruppe].push(s);
+            // Gruppenzuordnung NUR anhand der Vorrundenspiele
+            const matches = await fs.readJson(MATCHES_JSON);
+            let standingsWithGroup = [];
+            Object.entries(standings).forEach(([gruppe, groupStandings]) => {
+                if (Array.isArray(groupStandings)) {
+                    groupStandings.forEach(s => {
+                        standingsWithGroup.push({ ...s, gruppe });
+                    });
+                }
             });
-            res.json(standings);
+            // Sortiere: erst nach Gruppe (A, B, C), dann nach Punkten, Tordifferenz, Tore, Name
+            const groupOrder = ['A', 'B', 'C'];
+            standingsWithGroup.sort((a, b) => {
+                const ga = groupOrder.indexOf(a.gruppe);
+                const gb = groupOrder.indexOf(b.gruppe);
+                if (ga !== gb) return ga - gb;
+                    if (b.points !== a.points) return b.points - a.points;
+                    const diffA = a.goalsFor - a.goalsAgainst;
+                    const diffB = b.goalsFor - b.goalsAgainst;
+                    if (diffB !== diffA) return diffB - diffA;
+                    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+                    return a.name.localeCompare(b.name);
+                });
+            res.json(standingsWithGroup);
+            return;
         } else {
             // Für 10 Teams: Einzel-Tabelle (Array)
-            res.json(standingsArr);
+            res.json(standings);
         }
     } catch (error) {
+        console.error('Fehler beim Laden der Tabelle:', error);
         res.status(500).json({ error: 'Fehler beim Laden der Tabelle' });
     }
 });
@@ -1060,69 +907,86 @@ function requireAuth(req, res, next) {
 
 // API: Match-Ergebnis eintragen (Admin)
 app.put('/api/matches/:id', requireAuth, async (req, res) => {
+    try {
     const { id } = req.params;
     let { score1, score2 } = req.body;
-    try {
-        // Match aus DB holen
-        let match = await Match.findOne({ id });
-        if (!match) return res.status(404).json({ message: 'Match nicht gefunden' });
+        
+        // Matches aus Datei laden
+        let matches = await fs.readJson(MATCHES_JSON);
+        let allMatches = [...(matches.vorrunde || []), ...(matches.ko || [])];
+        let match = allMatches.find(m => m.id === id);
+        
+    if (!match) return res.status(404).json({ message: 'Match nicht gefunden' });
+    
         // Ergebnis setzen
-        match.score1 = score1;
-        match.score2 = score2;
-        if (score1 === null && score2 === null) {
-            match.status = 'geplant';
-        } else if (score1 !== null && score2 !== null) {
-            match.status = 'completed';
-        } else {
-            match.status = 'geplant';
-        }
-        await match.save();
-        // Standings aktualisieren
-        await recalculateStandingsMongo();
+    match.score1 = score1;
+    match.score2 = score2;
+    if (score1 === null && score2 === null) {
+        match.status = 'geplant';
+    } else if (score1 !== null && score2 !== null) {
+        match.status = 'completed';
+    } else {
+        match.status = 'geplant';
+    }
+        
+        // Matches speichern
+        matches.vorrunde = allMatches.filter(m => m.phase === 'vorrunde');
+        matches.ko = allMatches.filter(m => m.phase !== 'vorrunde');
+    await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
 
+    // Standings aktualisieren
+        await calculateStandingsFile();
+        
         // === NEU: KO-Phase automatisch befüllen, wenn Vorrunde/Gruppen abgeschlossen ===
-        const teams = await Team.find();
-        const allMatches = await Match.find();
+        const teams = await fs.readJson(TEAMS_JSON);
         if (teams.length === 10) {
             // Bei 10 Teams: alle Vorrundenspiele müssen abgeschlossen sein
-            const vorrundeDone = allMatches.filter(m => m.phase === 'vorrunde').every(m => m.status === 'completed');
+            const vorrundeDone = (matches.vorrunde || []).every(m => m.status === 'completed');
             if (vorrundeDone) {
-                await updateKOMatchesMongo();
+                await fillKOMatchesFromStandingsFile();
             }
         } else if (teams.length === 8 || teams.length === 9) {
             // Bei 8/9 Teams: alle Gruppenspiele müssen abgeschlossen sein
             // Gruppen werden über das Feld "round" erkannt (z.B. "Gruppe A")
-            const gruppen = Array.from(new Set(allMatches.filter(m => m.phase === 'vorrunde' && m.round && m.round.match(/Gruppe ([A-Z])/)).map(m => m.round.match(/Gruppe ([A-Z])/)[1])));
+            const gruppen = Array.from(new Set((matches.vorrunde || []).filter(m => m.round && m.round.match(/Gruppe ([A-Z])/)).map(m => m.round.match(/Gruppe ([A-Z])/)[1])));
             let allGroupsDone = true;
             for (const gruppe of gruppen) {
-                const groupMatches = allMatches.filter(m => m.phase === 'vorrunde' && m.round && m.round.includes(gruppe));
+            const groupMatches = (matches.vorrunde || []).filter(m => m.round && m.round.includes(gruppe));
                 if (!groupMatches.every(m => m.status === 'completed')) {
                     allGroupsDone = false;
                     break;
                 }
             }
             if (allGroupsDone && gruppen.length > 0) {
-                await updateKOMatchesMongo();
+                await fillKOMatchesFromStandingsFile();
             }
         }
 
         // KO-Phase ggf. weiterführen
-        if (match.phase === 'ko' && match.status === 'completed') {
-            await advanceKOMatchesMongo();
-        }
-        res.json({ success: true });
+    if (match.phase === 'ko' && match.status === 'completed') {
+        await advanceKOMatches();
+    }
+    
+    res.json({ success: true });
     } catch (error) {
+        console.error('Fehler beim Speichern:', error);
         res.status(500).json({ message: 'Fehler beim Speichern', error: error.message });
     }
 });
 
 // Zeit-Update (Admin)
 app.put('/api/matches/:id/time', requireAuth, async (req, res) => {
+    try {
     const { id } = req.params;
     const { time, pauseDuration } = req.body;
-    try {
-        let match = await Match.findOne({ id });
+        
+        // Matches aus Datei laden
+        let matches = await fs.readJson(MATCHES_JSON);
+        let allMatches = [...(matches.vorrunde || []), ...(matches.ko || [])];
+        let match = allMatches.find(m => m.id === id);
+        
         if (!match) return res.status(404).json({ message: 'Match nicht gefunden' });
+        
         // Zeit setzen
         match.startTime = time;
         if (match.phase === 'pause' && pauseDuration) {
@@ -1132,44 +996,43 @@ app.put('/api/matches/:id/time', requireAuth, async (req, res) => {
             const start = new Date(2025, 6, 5, h, m, 0);
             const end = new Date(start.getTime() + pauseDuration * 60 * 1000);
             match.endTime = `${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
-        } else {
+    } else {
             // Endzeit für normales Spiel
             const [h, m] = time.split(':').map(Number);
             const start = new Date(2025, 6, 5, h, m, 0);
             const end = new Date(start.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
             match.endTime = `${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
         }
-        await match.save();
+        
+        // Matches speichern
+    matches.vorrunde = allMatches.filter(m => m.phase === 'vorrunde');
+    matches.ko = allMatches.filter(m => m.phase !== 'vorrunde');
+    await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
 
         // === NEU: Spielplan ab diesem Spiel fortlaufend neu berechnen ===
-        // Alle Matches laden und in vorrunde/ko gruppieren
-        const allMatches = await Match.find();
-        const matchesObj = {
-            vorrunde: allMatches.filter(m => m.phase === 'vorrunde'),
-            ko: allMatches.filter(m => m.phase !== 'vorrunde')
-        };
-        // Spielplan neu berechnen ab diesem Spiel
-        const updated = await recalculateMatchTimes(matchesObj, id);
-        // Änderungen in der DB speichern
-        for (const m of [...updated.vorrunde, ...updated.ko]) {
-            await Match.updateOne({ id: m.id }, { $set: { startTime: m.startTime, endTime: m.endTime, pauseDuration: m.pauseDuration } });
-        }
+        const updated = await recalculateMatchTimes(matches, id);
 
-        res.json({ success: true });
+    res.json({ success: true });
     } catch (error) {
+        console.error('Fehler beim Zeit-Update:', error);
         res.status(500).json({ message: 'Fehler beim Speichern', error: error.message });
     }
 });
 
 // API: Match-Score für einzelnes Team (Admin)
 app.post('/api/matches/:id/score', requireAuth, async (req, res) => {
+    try {
     const { id } = req.params;
     const { team, score } = req.body;
-    let matches = await fs.readJson(MATCHES_JSON).catch(() => ({ vorrunde: [], ko: [] }));
-    
-    // Spiel in Vorrunde oder K.o.-Phase finden
-    let match = matches.vorrunde.find(m => m.id === id) || matches.ko.find(m => m.id === id);
-    if (!match) return res.status(404).json({ message: 'Match nicht gefunden' });
+        
+        // Matches aus Datei laden
+        let matches = await fs.readJson(MATCHES_JSON);
+        let allMatches = [...(matches.vorrunde || []), ...(matches.ko || [])];
+        let match = allMatches.find(m => m.id === id);
+        
+        if (!match) {
+            return res.status(404).json({ message: 'Match nicht gefunden (nach Reset?)' });
+        }
     
     // Score für das entsprechende Team setzen
     if (team === '1') {
@@ -1187,53 +1050,56 @@ app.post('/api/matches/:id/score', requireAuth, async (req, res) => {
         match.status = 'geplant';
     }
     
+        // Matches speichern
+        matches.vorrunde = allMatches.filter(m => m.phase === 'vorrunde');
+        matches.ko = allMatches.filter(m => m.phase !== 'vorrunde');
     await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
     
     // Standings aktualisieren (nur wenn beide Ergebnisse vorhanden sind)
     if (match.score1 !== null && match.score2 !== null) {
-        let standings = await fs.readJson(STANDINGS_JSON).catch(() => []);
-        let t1 = standings.find(t => t.name === match.team1);
-        let t2 = standings.find(t => t.name === match.team2);
-        if (t1 && t2) {
-            t1.played++; t2.played++;
-            t1.goalsFor += match.score1; t1.goalsAgainst += match.score2;
-            t2.goalsFor += match.score2; t2.goalsAgainst += match.score1;
-            if (match.score1 > match.score2) { t1.won++; t1.points += 3; t2.lost++; }
-            else if (match.score1 < match.score2) { t2.won++; t2.points += 3; t1.lost++; }
-            else { t1.drawn++; t2.drawn++; t1.points++; t2.points++; }
-        }
-        await fs.writeJson(STANDINGS_JSON, standings, { spaces: 2 });
+            await calculateStandingsFile();
         
         // Wenn es ein KO-Spiel ist, KO-Phase weiterführen
         if (match.phase === 'ko') {
             await advanceKOMatches();
         }
+            
+            // NEU: Nach jedem abgeschlossenen Gruppenspiel automatisch KO-Phase befüllen
+            if (match.phase === 'vorrunde' && match.score1 !== null && match.score2 !== null) {
+                await fillKOMatchesFromStandingsFile();
+        }
     }
     
     res.json({ success: true });
+    } catch (error) {
+        console.error('Fehler beim Speichern des Scores:', error);
+        res.status(500).json({ message: 'Fehler beim Speichern', error: error.message });
+    }
 });
 
 // API: KO-Phase manuell aktualisieren (Admin)
 app.post('/api/ko/update', requireAuth, async (req, res) => {
     try {
-        await updateKOMatchesMongo();
-        await advanceKOMatchesMongo();
+        await fillKOMatchesFromStandingsFile();
+        await advanceKOMatches();
         res.json({ success: true, message: 'KO-Phase aktualisiert' });
     } catch (error) {
+        console.error('Fehler beim Aktualisieren der KO-Phase:', error);
         res.status(500).json({ success: false, message: 'Fehler beim Aktualisieren der KO-Phase', error: error.message });
     }
 });
 
 // API: Teamnamen ändern (Admin)
 app.put('/api/teams/:oldName', requireAuth, async (req, res) => {
+    try {
     const { oldName } = req.params;
     const { newName } = req.body;
     if (!newName || typeof newName !== 'string' || !newName.trim()) {
         return res.status(400).json({ success: false, message: 'Neuer Name fehlt oder ungültig' });
     }
-    try {
+        
         // Teams.json aktualisieren
-        let teams = await fs.readJson(TEAMS_JSON).catch(() => []);
+        let teams = await fs.readJson(TEAMS_JSON);
         let changed = false;
         teams.forEach(t => {
             if (t.name === oldName) {
@@ -1245,7 +1111,7 @@ app.put('/api/teams/:oldName', requireAuth, async (req, res) => {
         await fs.writeJson(TEAMS_JSON, teams, { spaces: 2 });
 
         // Matches.json aktualisieren
-        let matches = await fs.readJson(MATCHES_JSON).catch(() => ({ vorrunde: [], ko: [] }));
+        let matches = await fs.readJson(MATCHES_JSON);
         ['vorrunde', 'ko'].forEach(phase => {
             if (matches[phase]) {
                 matches[phase].forEach(m => {
@@ -1257,38 +1123,41 @@ app.put('/api/teams/:oldName', requireAuth, async (req, res) => {
         await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
 
         // Standings.json aktualisieren
-        let standings = await fs.readJson(STANDINGS_JSON).catch(() => []);
+        let standings = await fs.readJson(STANDINGS_JSON);
+        if (Array.isArray(standings)) {
+            // Für 10 Teams: Array
         standings.forEach(t => {
             if (t.name === oldName) t.name = newName;
         });
+        } else {
+            // Für 8/9 Teams: Objekt mit Gruppen
+            Object.values(standings).forEach(groupStandings => {
+                groupStandings.forEach(t => {
+                    if (t.name === oldName) t.name = newName;
+                });
+            });
+        }
         await fs.writeJson(STANDINGS_JSON, standings, { spaces: 2 });
 
         res.json({ success: true });
     } catch (error) {
+        console.error('Fehler beim Umbenennen:', error);
         res.status(500).json({ success: false, message: 'Fehler beim Umbenennen', error: error.message });
     }
 });
 
 // API: Turnier komplett zurücksetzen (Admin)
-app.post('/api/reset', requireAuth, async (req, res) => {
+app.post('/api/reset', async (req, res) => {
     try {
-        // Teams aus MongoDB laden
-        const teams = await Team.find().sort({ _id: 1 });
-        // Matches generieren
-        const matches = await generateMatches(teams);
-        // Alte Matches in MongoDB löschen
-        await Match.deleteMany({});
-        // Neue Matches in MongoDB speichern
-        const allMatches = [...(matches.vorrunde || []), ...(matches.ko || [])];
-        if (allMatches.length > 0) {
-            await Match.insertMany(allMatches);
-        }
-        // Standings generieren und speichern
-        await Standing.deleteMany({});
-        const standings = teams.map(t => ({ name: t.name, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 }));
-        if (standings.length > 0) {
-            await Standing.insertMany(standings);
-        }
+        let teams = await fs.readJson(TEAMS_JSON).catch(() => []);
+        const { vorrunde, ko } = generateVorrundeAndKO(teams);
+        let matches = { vorrunde, ko };
+        await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+        let standings = teams.map(t => ({
+            name: t.name, played: 0, won: 0, drawn: 0, lost: 0,
+            goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: null
+        }));
+        await fs.writeJson(STANDINGS_JSON, standings, { spaces: 2 });
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Fehler beim Zurücksetzen', error: error.message });
@@ -1296,68 +1165,72 @@ app.post('/api/reset', requireAuth, async (req, res) => {
 });
 
 // API: Team hinzufügen
-app.post('/api/teams', requireAuth, async (req, res) => {
+app.post('/api/teams', async (req, res) => {
     const { name } = req.body;
     if (!name || typeof name !== 'string' || !name.trim()) {
         return res.status(400).json({ success: false, message: 'Teamname fehlt oder ungültig' });
     }
-    try {
-        const exists = await Team.findOne({ name });
-        if (exists) {
+        let teams = await fs.readJson(TEAMS_JSON).catch(() => []);
+        if (teams.find(t => t.name === name)) {
             return res.status(400).json({ success: false, message: 'Teamname existiert bereits' });
         }
-        await Team.create({ name });
+        teams.push({ name });
+        await fs.writeJson(TEAMS_JSON, teams, { spaces: 2 });
+    // Nach Teamänderung: Spielplan und Standings neu generieren
+    await regenerateScheduleAndStandings();
         res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Fehler beim Hinzufügen', error: error.message });
-    }
 });
 
 // API: Team entfernen
-app.delete('/api/teams/:name', requireAuth, async (req, res) => {
+app.delete('/api/teams/:name', async (req, res) => {
     const { name } = req.params;
-    try {
-        const result = await Team.deleteOne({ name });
-        if (result.deletedCount === 0) {
+        let teams = await fs.readJson(TEAMS_JSON).catch(() => []);
+        const newTeams = teams.filter(t => t.name !== name);
+        if (newTeams.length === teams.length) {
             return res.status(404).json({ success: false, message: 'Team nicht gefunden' });
         }
+        await fs.writeJson(TEAMS_JSON, newTeams, { spaces: 2 });
+    // Nach Teamänderung: Spielplan und Standings neu generieren
+    await regenerateScheduleAndStandings();
         res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Fehler beim Entfernen', error: error.message });
-    }
 });
 
 // API: Spielzeit (gameDuration) abfragen
 app.get('/api/settings/gameDuration', async (req, res) => {
     try {
-        const setting = await Setting.findOne({ key: 'gameDuration' });
-        res.json({ value: setting ? setting.value : 8 });
+        await loadSettings();
+        res.json({ value: SPIELZEIT_MINUTEN });
     } catch (error) {
+        console.error('Fehler beim Laden der Spielzeit:', error);
         res.status(500).json({ error: 'Fehler beim Laden der Spielzeit' });
     }
 });
 
 app.post('/api/settings/gameDuration', requireAuth, async (req, res) => {
-    const { value } = req.body;
-    if (typeof value !== 'number' || value < 1) {
-        return res.status(400).json({ success: false, message: 'Ungültige Spielzeit' });
-    }
     try {
-        await Setting.findOneAndUpdate(
-            { key: 'gameDuration' },
-            { value },
-            { upsert: true }
-        );
+        const { value } = req.body;
+        if (typeof value !== 'number' || value < 1) {
+            return res.status(400).json({ success: false, message: 'Ungültige Spielzeit' });
+        }
+        await saveSettings({ spielzeit: value });
+        SPIELZEIT_MINUTEN = value;
         res.json({ success: true });
     } catch (error) {
+        console.error('Fehler beim Speichern der Spielzeit:', error);
         res.status(500).json({ success: false, message: 'Fehler beim Speichern', error: error.message });
     }
+});
+
+// Hauptseite ausliefern
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'index.html'));
 });
 
 // Serverstart
 ensureTeamsJson().then(ensureMatchesAndStandings).then(loadTimerState).then(() => {
     app.listen(PORT, () => {
         console.log(`Backend läuft auf http://localhost:${PORT}`);
+        console.log(`Frontend verfügbar auf http://localhost:${PORT}`);
     });
 }); 
 
@@ -1386,200 +1259,536 @@ fs.readJson(TEAMS_JSON).then(teams => {
 });
 // ... existing code ... 
 
-// MongoDB-Verbindung
-mongoose.connect('mongodb+srv://marcm984:v6UwbqiptqxJMYRM@juxturnier.jau1q5e.mongodb.net/?retryWrites=true&w=majority&appName=Juxturnier', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => {
-    console.log('MongoDB verbunden!');
-}).catch(err => {
-    console.error('MongoDB Fehler:', err);
-});
+// Hilfsfunktion zum Gruppieren der Standings für 8 und 9 Teams
+function groupStandings(standings, teamsLength) {
+    if (teamsLength === 8) {
+        return {
+            A: standings.filter(t => t.gruppe === 'A'),
+            B: standings.filter(t => t.gruppe === 'B')
+        };
+    } else if (teamsLength === 9) {
+        return {
+            A: standings.filter(t => t.gruppe === 'A'),
+            B: standings.filter(t => t.gruppe === 'B'),
+            C: standings.filter(t => t.gruppe === 'C')
+        };
+    }
+    return standings;
+}
 
-// Team-Modell
-const teamSchema = new mongoose.Schema({
-    name: { type: String, required: true, unique: true }
-});
-const Team = mongoose.model('Team', teamSchema);
-
-// Einstellungen-Modell
-const settingsSchema = new mongoose.Schema({
-    key: { type: String, required: true, unique: true },
-    value: mongoose.Schema.Types.Mixed
-});
-const Setting = mongoose.model('Setting', settingsSchema);
-
-// Match-Modell
-const matchSchema = new mongoose.Schema({
-    id: String,
-    phase: String,
-    round: String,
-    team1: String,
-    team2: String,
-    score1: Number,
-    score2: Number,
-    status: String,
-    startTime: String,
-    endTime: String,
-    gruppe: String
-});
-const Match = mongoose.model('Match', matchSchema);
-
-// Standings-Modell
-const standingSchema = new mongoose.Schema({
-    name: String,
-    played: Number,
-    won: Number,
-    drawn: Number,
-    lost: Number,
-    goalsFor: Number,
-    goalsAgainst: Number,
-    points: Number,
-    gruppe: String
-}, { strict: false }); // <-- strict: false erlaubt zusätzliche Felder
-const Standing = mongoose.model('Standing', standingSchema);
-
-// Hilfsfunktionen für Standings und KO-Phase mit MongoDB
-async function recalculateStandingsMongo() {
-    const matches = await Match.find();
-    const teams = await Team.find();
-    let standings = teams.map(t => ({
-        name: t.name, played: 0, won: 0, drawn: 0, lost: 0,
-        goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: null
-    }));
-    // Gruppenzuordnung für jedes Team anhand der Gruppenspiele
-    const gruppenMap = {};
-    matches.filter(m => m.phase === 'vorrunde' && m.round && m.round.match(/Gruppe ([A-Z])/)).forEach(m => {
-        const gruppe = m.round.match(/Gruppe ([A-Z])/)[1];
-        [m.team1, m.team2].forEach(teamName => {
-            gruppenMap[teamName.trim().toLowerCase()] = gruppe;
-        });
-    });
-    standings.forEach(s => {
-        const key = s.name.trim().toLowerCase();
-        if (gruppenMap[key]) s.gruppe = gruppenMap[key];
-    });
-    // Statistiken berechnen
-    matches.filter(m => m.phase === 'vorrunde').forEach(match => {
-        if (typeof match.score1 === 'number' && typeof match.score2 === 'number') {
-            let t1 = standings.find(t => t.name === match.team1);
-            let t2 = standings.find(t => t.name === match.team2);
-            if (t1 && t2) {
-                t1.played++; t2.played++;
-                t1.goalsFor += match.score1; t1.goalsAgainst += match.score2;
-                t2.goalsFor += match.score2; t2.goalsAgainst += match.score1;
-                if (match.score1 > match.score2) { t1.won++; t1.points += 3; t2.lost++; }
-                else if (match.score1 < match.score2) { t2.won++; t2.points += 3; t1.lost++; }
-                else { t1.drawn++; t2.drawn++; t1.points++; t2.points++; }
+// NEUE Turnierlogik für 8, 9, 10 Teams
+function generateVorrundeAndKO(teams) {
+    const n = teams.length;
+    let vorrunde = [];
+    let ko = [];
+    if (n === 8) {
+        // 2 Gruppen à 4 Teams
+        const gruppen = [teams.slice(0, 4), teams.slice(4, 8)];
+        const gruppenNamen = ['A', 'B'];
+        // Klassische Reihenfolge für 4er-Gruppen: 1-2, 3-4, 1-3, 2-4, 4-1, 2-3
+        const paarungen = [
+            [0, 1], [2, 3],
+            [0, 2], [1, 3],
+            [3, 0], [1, 2]
+        ];
+        // Blöcke: immer 2 Spiele aus A, dann 2 aus B, dann wieder A, B ...
+        for (let block = 0; block < 3; block++) {
+            for (let g = 0; g < 2; g++) {
+                for (let p = 0; p < 2; p++) {
+                    const idx = block * 2 + p;
+                    const gruppe = gruppen[g];
+                    const gruppeName = gruppenNamen[g];
+                    const [i, j] = paarungen[idx];
+                    vorrunde.push({
+                        id: `g${gruppeName}_${gruppe[i].name}_vs_${gruppe[j].name}`,
+                        phase: 'vorrunde',
+                        round: `Gruppe ${gruppeName}`,
+                        team1: gruppe[i].name,
+                        team2: gruppe[j].name,
+                        score1: null, score2: null, status: 'geplant', startTime: null, endTime: null
+                    });
+                }
             }
         }
-    });
-    // Logging zur Kontrolle
-    console.log('Standings to insert:', JSON.stringify(standings, null, 2));
-    // Standings in DB ersetzen
-    await Standing.deleteMany({});
-    for (const s of standings) {
-        await Standing.create(s);
+        // KO-Spiele: 4 Viertelfinale, 2 Halbfinale, Finale mit festen Platzhaltern
+        ko = [
+            { id: 'pause1', phase: 'pause', round: '20 Minuten Pause', team1: '', team2: '', status: 'pause', startTime: null, endTime: null, pauseDuration: 20 },
+            { id: 'VF1', phase: 'ko', round: 'Viertelfinale 1', team1: '1. Gruppe A', team2: '4. Gruppe B', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'VF2', phase: 'ko', round: 'Viertelfinale 2', team1: '2. Gruppe A', team2: '3. Gruppe B', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'VF3', phase: 'ko', round: 'Viertelfinale 3', team1: '1. Gruppe B', team2: '4. Gruppe A', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'VF4', phase: 'ko', round: 'Viertelfinale 4', team1: '2. Gruppe B', team2: '3. Gruppe A', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'pause2', phase: 'pause', round: '10 Minuten Pause', team1: '', team2: '', status: 'pause', startTime: null, endTime: null, pauseDuration: 10 },
+            { id: 'HF1', phase: 'ko', round: 'Halbfinale 1', team1: 'Sieger VF1', team2: 'Sieger VF4', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'HF2', phase: 'ko', round: 'Halbfinale 2', team1: 'Sieger VF2', team2: 'Sieger VF3', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'pause3', phase: 'pause', round: '10 Minuten Pause', team1: '', team2: '', status: 'pause', startTime: null, endTime: null, pauseDuration: 10 },
+            { id: 'F1', phase: 'ko', round: 'Finale', team1: 'Sieger HF1', team2: 'Sieger HF2', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null }
+        ];
+    } else if (n === 9) {
+        // 3 Gruppen à 3 Teams
+        const gruppen = [teams.slice(0, 3), teams.slice(3, 6), teams.slice(6, 9)];
+        const gruppenNamen = ['A', 'B', 'C'];
+        let gruppenSpiele = [];
+        gruppen.forEach((gruppe, gIdx) => {
+            let spiele = [];
+            for (let i = 0; i < 3; i++) {
+                for (let j = i + 1; j < 3; j++) {
+                    spiele.push({
+                        gruppe: gruppenNamen[gIdx],
+                        team1: gruppe[i].name,
+                        team2: gruppe[j].name
+                    });
+                }
+            }
+            gruppenSpiele.push(spiele);
+        });
+        // ABCABCABC: immer ein Spiel aus A, dann B, dann C, dann wieder A, B, C ...
+        for (let r = 0; r < 3; r++) {
+            for (let g = 0; g < 3; g++) {
+                if (gruppenSpiele[g][r]) vorrunde.push({
+                    id: `g${gruppenNamen[g]}_${gruppenSpiele[g][r].team1}_vs_${gruppenSpiele[g][r].team2}`,
+                    phase: 'vorrunde',
+                    round: `Gruppe ${gruppenNamen[g]}`,
+                    team1: gruppenSpiele[g][r].team1,
+                    team2: gruppenSpiele[g][r].team2,
+                    score1: null, score2: null, status: 'geplant', startTime: null, endTime: null
+                });
+            }
+        }
+        // KO-Spiele: 4 Viertelfinale, 2 Halbfinale, Finale mit festen Platzhaltern
+        ko = [
+            { id: 'pause1', phase: 'pause', round: '20 Minuten Pause', team1: '', team2: '', status: 'pause', startTime: null, endTime: null, pauseDuration: 20 },
+            { id: 'VF1', phase: 'ko', round: 'Viertelfinale 1', team1: '1. Gruppe A', team2: 'Bester 3. Gruppe B/C', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'VF2', phase: 'ko', round: 'Viertelfinale 2', team1: '1. Gruppe B', team2: 'Bester 3. Gruppe A/C', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'VF3', phase: 'ko', round: 'Viertelfinale 3', team1: '1. Gruppe C', team2: '2. Gruppe A', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'VF4', phase: 'ko', round: 'Viertelfinale 4', team1: '2. Gruppe B', team2: '2. Gruppe C', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'pause2', phase: 'pause', round: '10 Minuten Pause', team1: '', team2: '', status: 'pause', startTime: null, endTime: null, pauseDuration: 10 },
+            { id: 'HF1', phase: 'ko', round: 'Halbfinale 1', team1: 'Sieger VF1', team2: 'Sieger VF3', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'HF2', phase: 'ko', round: 'Halbfinale 2', team1: 'Sieger VF2', team2: 'Sieger VF4', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'pause3', phase: 'pause', round: '10 Minuten Pause', team1: '', team2: '', status: 'pause', startTime: null, endTime: null, pauseDuration: 10 },
+            { id: 'F1', phase: 'ko', round: 'Finale', team1: 'Sieger HF1', team2: 'Sieger HF2', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null }
+        ];
+    } else if (n === 10) {
+        // 1 Gruppe mit 10 Teams, jeder spielt 2 Vorrundenspiele
+        const vorrundenPaarungen = [
+            [0, 1], [2, 3], [4, 5], [6, 7], [8, 9],
+            [0, 2], [1, 3], [4, 6], [5, 7], [8, 9]
+        ];
+        vorrundenPaarungen.forEach((paarung, idx) => {
+            vorrunde.push({
+                id: `v${idx + 1}`,
+                phase: 'vorrunde',
+                round: 'Vorrunde',
+                team1: teams[paarung[0]].name,
+                team2: teams[paarung[1]].name,
+                score1: null, score2: null, status: 'geplant', startTime: null, endTime: null
+            });
+        });
+        // KO-Spiele: 2 Achtelfinale, 4 Viertelfinale, 2 Halbfinale, Finale mit Platzhaltern
+        ko = [
+            { id: 'pause1', phase: 'pause', round: '20 Minuten Pause', team1: '', team2: '', status: 'pause', startTime: null, endTime: null, pauseDuration: 20 },
+            { id: 'AF1', phase: 'ko', round: 'Achtelfinale 1', team1: 'Platz 7', team2: 'Platz 10', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'AF2', phase: 'ko', round: 'Achtelfinale 2', team1: 'Platz 8', team2: 'Platz 9', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'VF1', phase: 'ko', round: 'Viertelfinale 1', team1: 'Platz 3', team2: 'Platz 6', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'VF2', phase: 'ko', round: 'Viertelfinale 2', team1: 'Platz 4', team2: 'Platz 5', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'VF3', phase: 'ko', round: 'Viertelfinale 3', team1: 'Platz 2', team2: 'Sieger AF1', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'VF4', phase: 'ko', round: 'Viertelfinale 4', team1: 'Platz 1', team2: 'Sieger AF2', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'pause2', phase: 'pause', round: '10 Minuten Pause', team1: '', team2: '', status: 'pause', startTime: null, endTime: null, pauseDuration: 10 },
+            { id: 'HF1', phase: 'ko', round: 'Halbfinale 1', team1: 'Sieger VF3', team2: 'Sieger VF1', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'HF2', phase: 'ko', round: 'Halbfinale 2', team1: 'Sieger VF4', team2: 'Sieger VF2', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'pause3', phase: 'pause', round: '10 Minuten Pause', team1: '', team2: '', status: 'pause', startTime: null, endTime: null, pauseDuration: 10 },
+            { id: 'F1', phase: 'ko', round: 'Finale', team1: 'Sieger HF1', team2: 'Sieger HF2', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null }
+        ];
     }
-    // Logging nach dem Insert
-    const saved = await Standing.find();
-    console.log('Standings in DB:', saved);
+    return { vorrunde, ko };
 }
 
-async function recalculateMatchTimes(matches, startFromMatchId = null) {
-    let allMatches = [...matches.vorrunde, ...matches.ko];
-    // Immer ALLE Zeiten neu berechnen, unabhängig von vorhandenen Werten
-    let currentTime = new Date('2025-07-05T14:00:00');
-    for (let i = 0; i < allMatches.length; i++) {
-        let m = allMatches[i];
-        // Pause nach Vorrunde/letztem Gruppenspiel
-        if (m.phase === 'pause' && (m.id === 'pause1')) {
-            let pauseLen = 20;
-            const pauseStart = new Date(currentTime);
-            const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
-            m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
-            m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
-            currentTime = new Date(pauseEnd.getTime());
-            continue;
-        }
-        // Pause vor Finale (immer 10 Minuten)
-        if (m.phase === 'pause' && (m.id === 'pause2' || m.id === 'pause3')) {
-            let pauseLen = 10;
-            const pauseStart = new Date(currentTime);
-            const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
-            m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
-            m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
-            currentTime = new Date(pauseEnd.getTime());
-            continue;
-        }
-        // Normale Pause
-        if (m.phase === 'pause') {
-            let pauseLen = PAUSENZEIT_MINUTEN;
-            const pauseStart = new Date(currentTime);
-            const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
-            m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
-            m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
-            currentTime = new Date(pauseEnd.getTime());
-            continue;
-        }
-        // Spiel (egal ob Gruppenspiel oder KO)
-        m.startTime = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`;
-        const matchEnd = new Date(currentTime.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
-        m.endTime = `${matchEnd.getHours().toString().padStart(2, '0')}:${matchEnd.getMinutes().toString().padStart(2, '0')}`;
-        currentTime = new Date(matchEnd.getTime());
-        // Nach jedem Spiel: Pause, außer nach dem letzten
-        const next = allMatches[i + 1];
-        if (next && next.phase === 'pause' && (next.id === 'pause1' || next.id === 'pause2' || next.id === 'pause3')) {
-            continue;
-        }
-        if (i === allMatches.length - 1) break;
-        currentTime = new Date(currentTime.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
+app.post('/api/matches/:id/score', async (req, res) => {
+    const { id } = req.params;
+    const { team, score } = req.body;
+    let matches = await fs.readJson(MATCHES_JSON).catch(() => ({ vorrunde: [], ko: [] }));
+    let match = matches.vorrunde.find(m => m.id === id) || matches.ko.find(m => m.id === id);
+    if (!match) return res.status(404).json({ message: 'Match nicht gefunden' });
+    // Score setzen
+    if (team === '1') {
+        match.score1 = score;
+    } else if (team === '2') {
+        match.score2 = score;
+    } else {
+        return res.status(400).json({ message: 'Ungültiges Team' });
     }
-    matches.vorrunde = allMatches.filter(m => m.phase === 'vorrunde');
-    matches.ko = allMatches.filter(m => m.phase !== 'vorrunde');
-    return matches;
-}
-// ... existing code ...
+    // Status setzen
+    if (match.score1 !== null && match.score2 !== null) {
+        match.status = 'completed';
+    } else {
+        match.status = 'geplant';
+    }
+    await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+    // Standings aktualisieren (nur wenn beide Ergebnisse vorhanden sind)
+    if (match.score1 !== null && match.score2 !== null) {
+        let standings = await fs.readJson(STANDINGS_JSON).catch(() => []);
+        let t1 = standings.find(t => t.name === match.team1);
+        let t2 = standings.find(t => t.name === match.team2);
+        if (t1 && t2) {
+            t1.played++; t2.played++;
+            t1.goalsFor += match.score1; t1.goalsAgainst += match.score2;
+            t2.goalsFor += match.score2; t2.goalsAgainst += match.score1;
+            if (match.score1 > match.score2) { t1.won++; t1.points += 3; t2.lost++; }
+            else if (match.score1 < match.score2) { t2.won++; t2.points += 3; t1.lost++; }
+            else { t1.drawn++; t2.drawn++; t1.points++; t2.points++; }
+        }
+        await fs.writeJson(STANDINGS_JSON, standings, { spaces: 2 });
+        // KO-Phase ggf. automatisch befüllen (Logik nach Bedarf einfügen)
+    }
+    res.json({ success: true });
+});
 
-// Zentrale Funktion: Turnier nach Teamänderung komplett neu aufbauen
-async function updateTournamentState() {
-    const teams = await Team.find();
-    // 1. Matches neu generieren
-    const matches = await generateMatches(teams);
-    // 2. Zeiten für alle Spiele setzen
-    await recalculateMatchTimes(matches);
-    // 3. Matches in DB speichern (ersetzen)
-    await Match.deleteMany({});
-    await Match.insertMany([...matches.vorrunde, ...matches.ko]);
-    // 4. Standings mit Gruppenzuordnung neu berechnen
-    await recalculateStandingsMongo();
-    // 5. KO-Phase automatisch befüllen
-    await updateKOMatchesMongo();
+// Standings berechnen (nur Vorrunde)
+async function calculateStandingsFile() {
+    try {
+        let matches = await fs.readJson(MATCHES_JSON).catch(() => ({ vorrunde: [], ko: [] }));
+        let teams = await fs.readJson(TEAMS_JSON).catch(() => []);
+        
+        if (teams.length === 8 || teams.length === 9) {
+            // Gruppierte Standings für 8/9 Teams
+            let gruppen = {};
+            if (teams.length === 8) {
+                gruppen = { A: teams.slice(0, 4), B: teams.slice(4, 8) };
+            } else if (teams.length === 9) {
+                gruppen = { A: teams.slice(0, 3), B: teams.slice(3, 6), C: teams.slice(6, 9) };
+            }
+            
+            let result = {};
+            Object.entries(gruppen).forEach(([gruppe, groupTeams]) => {
+                let standings = groupTeams.map(t => ({
+                    name: t.name,
+                    played: 0,
+                    won: 0,
+                    drawn: 0,
+                    lost: 0,
+                    goalsFor: 0,
+                    goalsAgainst: 0,
+                    points: 0,
+                    gruppe: gruppe
+                }));
+                
+                const groupMatches = (matches.vorrunde || []).filter(m => m.round && m.round.includes(gruppe));
+                groupMatches.forEach(match => {
+                    if (typeof match.score1 === 'number' && typeof match.score2 === 'number' && match.score1 !== null && match.score2 !== null) {
+                        let t1 = standings.find(t => t.name === match.team1);
+                        let t2 = standings.find(t => t.name === match.team2);
+                        if (t1 && t2) {
+                            t1.played++; t2.played++;
+                            t1.goalsFor += match.score1; t1.goalsAgainst += match.score2;
+                            t2.goalsFor += match.score2; t2.goalsAgainst += match.score1;
+                            if (match.score1 > match.score2) { t1.won++; t1.points += 3; t2.lost++; }
+                            else if (match.score1 < match.score2) { t2.won++; t2.points += 3; t1.lost++; }
+                            else { t1.drawn++; t2.drawn++; t1.points++; t2.points++; }
+                        }
+                    }
+                });
+                
+                standings.sort((a, b) => {
+                    if (b.points !== a.points) return b.points - a.points;
+                    const diffA = a.goalsFor - a.goalsAgainst;
+                    const diffB = b.goalsFor - b.goalsAgainst;
+                    if (diffB !== diffA) return diffB - diffA;
+                    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+                    return a.name.localeCompare(b.name);
+                });
+                
+                result[gruppe] = standings;
+            });
+            
+            await fs.writeJson(STANDINGS_JSON, result, { spaces: 2 });
+            return result;
+        } else {
+            // Einzel-Tabelle für 10 Teams
+            let standings = teams.map(t => ({
+                name: t.name, played: 0, won: 0, drawn: 0, lost: 0,
+                goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: null
+            }));
+            
+            // Statistiken
+            (matches.vorrunde || []).forEach(match => {
+                if (typeof match.score1 === 'number' && typeof match.score2 === 'number' && match.score1 !== null && match.score2 !== null) {
+                    let t1 = standings.find(t => t.name === match.team1);
+                    let t2 = standings.find(t => t.name === match.team2);
+                    if (t1 && t2) {
+                        t1.played++; t2.played++;
+                        t1.goalsFor += match.score1; t1.goalsAgainst += match.score2;
+                        t2.goalsFor += match.score2; t2.goalsAgainst += match.score1;
+                        if (match.score1 > match.score2) { t1.won++; t1.points += 3; t2.lost++; }
+                        else if (match.score1 < match.score2) { t2.won++; t2.points += 3; t1.lost++; }
+                        else { t1.drawn++; t2.drawn++; t1.points++; t2.points++; }
+                    }
+                }
+            });
+            
+            standings.sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                const diffA = a.goalsFor - a.goalsAgainst;
+                const diffB = b.goalsFor - b.goalsAgainst;
+                if (diffB !== diffA) return diffB - diffA;
+                if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+                return a.name.localeCompare(b.name);
+            });
+            
+            await fs.writeJson(STANDINGS_JSON, standings, { spaces: 2 });
+            return standings;
+        }
+    } catch (error) {
+        console.error('Fehler beim Berechnen der Standings:', error);
+        return [];
+    }
+}
+
+// KO-Befüllung nach Vorrunde (Datei)
+async function fillKOMatchesFromStandingsFile() {
+    try {
+        let teams = await fs.readJson(TEAMS_JSON).catch(() => []);
+        let matches = await fs.readJson(MATCHES_JSON).catch(() => ({ vorrunde: [], ko: [] }));
+        let standings = await fs.readJson(STANDINGS_JSON).catch(() => []);
+        
+        // Sortierfunktion für Standings
+        const sortStandings = (a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            const diffA = a.goalsFor - a.goalsAgainst;
+            const diffB = b.goalsFor - b.goalsAgainst;
+            if (diffB !== diffA) return diffB - diffA;
+            if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+            return a.name.localeCompare(b.name);
+        };
+        
+        if (teams.length === 8) {
+            const gruppeA = (standings.A || []).sort(sortStandings);
+            const gruppeB = (standings.B || []).sort(sortStandings);
+            let VF1 = matches.ko.find(m => m.id === 'VF1');
+            let VF2 = matches.ko.find(m => m.id === 'VF2');
+            let VF3 = matches.ko.find(m => m.id === 'VF3');
+            let VF4 = matches.ko.find(m => m.id === 'VF4');
+            let HF1 = matches.ko.find(m => m.id === 'HF1');
+            let HF2 = matches.ko.find(m => m.id === 'HF2');
+            let F1 = matches.ko.find(m => m.id === 'F1');
+            if (VF1) { VF1.team1 = gruppeA[0]?.name || ''; VF1.team2 = gruppeB[3]?.name || ''; }
+            if (VF2) { VF2.team1 = gruppeA[1]?.name || ''; VF2.team2 = gruppeB[2]?.name || ''; }
+            if (VF3) { VF3.team1 = gruppeB[0]?.name || ''; VF3.team2 = gruppeA[3]?.name || ''; }
+            if (VF4) { VF4.team1 = gruppeB[1]?.name || ''; VF4.team2 = gruppeA[2]?.name || ''; }
+            if (HF1) { HF1.team1 = 'Sieger VF1'; HF1.team2 = 'Sieger VF4'; }
+            if (HF2) { HF2.team1 = 'Sieger VF2'; HF2.team2 = 'Sieger VF3'; }
+            if (F1) { F1.team1 = 'Sieger HF1'; F1.team2 = 'Sieger HF2'; }
+        } else if (teams.length === 9) {
+            // Gruppieren und sortieren (Objekt mit Gruppen)
+            const gruppeA = (standings.A || []).sort(sortStandings);
+            const gruppeB = (standings.B || []).sort(sortStandings);
+            const gruppeC = (standings.C || []).sort(sortStandings);
+            // Gruppenerste, -zweite, -dritte sortieren
+            let erste = [gruppeA[0], gruppeB[0], gruppeC[0]].sort(sortStandings);
+            let zweite = [gruppeA[1], gruppeB[1], gruppeC[1]].sort(sortStandings);
+            let dritte = [gruppeA[2], gruppeB[2], gruppeC[2]].sort(sortStandings);
+            // 2 beste Dritte
+            let besteDritte = [...dritte].sort(sortStandings).slice(0, 2);
+            // Schwächster Zweiter ist der mit dem niedrigsten Ranking
+            let schwächsterZweiter = [...zweite].sort(sortStandings)[2];
+
+            // Ursprüngliche Paarungen
+            let vfPairs = [
+                { id: 'VF1', team1: erste[0], team2: besteDritte[1] },
+                { id: 'VF2', team1: erste[1], team2: besteDritte[0] },
+                { id: 'VF3', team1: erste[2], team2: schwächsterZweiter },
+                { id: 'VF4', team1: zweite[0], team2: zweite[1] }
+            ];
+
+            // Prüfe auf Gruppenduelle und tausche Gegner, falls nötig
+            // Nur für VF1, VF2, VF3 relevant (VF4 sind immer Zweite aus verschiedenen Gruppen)
+            for (let i = 0; i < 3; i++) {
+                let { team1, team2 } = vfPairs[i];
+                if (team1 && team2 && team1.gruppe === team2.gruppe) {
+                    // Suche einen anderen Gegner, der nicht aus der gleichen Gruppe ist
+                    for (let j = 0; j < 3; j++) {
+                        if (i === j) continue;
+                        let altTeam2 = vfPairs[j].team2;
+                        if (altTeam2 && team1.gruppe !== altTeam2.gruppe && vfPairs[j].team1.gruppe !== team2.gruppe) {
+                            // Tausche die Gegner
+                            vfPairs[i].team2 = altTeam2;
+                            vfPairs[j].team2 = team2;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Paarungen setzen
+            let VF1 = matches.ko.find(m => m.id === 'VF1');
+            let VF2 = matches.ko.find(m => m.id === 'VF2');
+            let VF3 = matches.ko.find(m => m.id === 'VF3');
+            let VF4 = matches.ko.find(m => m.id === 'VF4');
+            let HF1 = matches.ko.find(m => m.id === 'HF1');
+            let HF2 = matches.ko.find(m => m.id === 'HF2');
+            let F1 = matches.ko.find(m => m.id === 'F1');
+            if (VF1) { VF1.team1 = vfPairs[0].team1?.name || ''; VF1.team2 = vfPairs[0].team2?.name || ''; }
+            if (VF2) { VF2.team1 = vfPairs[1].team1?.name || ''; VF2.team2 = vfPairs[1].team2?.name || ''; }
+            if (VF3) { VF3.team1 = vfPairs[2].team1?.name || ''; VF3.team2 = vfPairs[2].team2?.name || ''; }
+            if (VF4) { VF4.team1 = vfPairs[3].team1?.name || ''; VF4.team2 = vfPairs[3].team2?.name || ''; }
+            if (HF1) { HF1.team1 = 'Sieger VF1'; HF1.team2 = 'Sieger VF4'; }
+            if (HF2) { HF2.team1 = 'Sieger VF2'; HF2.team2 = 'Sieger VF3'; }
+            if (F1) { F1.team1 = 'Sieger HF1'; F1.team2 = 'Sieger HF2'; }
+        } else if (teams.length === 10) {
+            const sorted = [...standings].sort(sortStandings);
+            
+            let AF1 = matches.ko.find(m => m.id === 'AF1');
+            let AF2 = matches.ko.find(m => m.id === 'AF2');
+            let VF1 = matches.ko.find(m => m.id === 'VF1');
+            let VF2 = matches.ko.find(m => m.id === 'VF2');
+            let VF3 = matches.ko.find(m => m.id === 'VF3');
+            let VF4 = matches.ko.find(m => m.id === 'VF4');
+            let HF1 = matches.ko.find(m => m.id === 'HF1');
+            let HF2 = matches.ko.find(m => m.id === 'HF2');
+            let F1 = matches.ko.find(m => m.id === 'F1');
+            
+            if (AF1) { AF1.team1 = sorted[6]?.name || ''; AF1.team2 = sorted[9]?.name || ''; }
+            if (AF2) { AF2.team1 = sorted[7]?.name || ''; AF2.team2 = sorted[8]?.name || ''; }
+            if (VF1) { VF1.team1 = sorted[2]?.name || ''; VF1.team2 = sorted[5]?.name || ''; }
+            if (VF2) { VF2.team1 = sorted[3]?.name || ''; VF2.team2 = sorted[4]?.name || ''; }
+            if (VF3) { VF3.team1 = sorted[1]?.name || ''; VF3.team2 = 'Sieger AF1'; }
+            if (VF4) { VF4.team1 = sorted[0]?.name || ''; VF4.team2 = 'Sieger AF2'; }
+            if (HF1) { HF1.team1 = 'Sieger VF3'; HF1.team2 = 'Sieger VF1'; }
+            if (HF2) { HF2.team1 = 'Sieger VF4'; HF2.team2 = 'Sieger VF2'; }
+            if (F1) { F1.team1 = 'Sieger HF1'; F1.team2 = 'Sieger HF2'; }
+        }
+        
+        await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+    } catch (error) {
+        console.error('Fehler beim Befüllen der KO-Matches:', error);
+    }
+}
+
+// 2. Automatische Zeitberechnung für alle Spiele
+async function recalculateMatchTimesFile(matches, startFromMatchId = null) {
+    try {
+        let allMatches = [...(matches.vorrunde || []), ...(matches.ko || [])];
+        // Startzeit immer 14:00 Uhr
+        let currentTime = new Date('2025-07-05T14:00:00');
+        let startIndex = 0;
+        if (startFromMatchId) {
+            // Finde das Spiel, ab dem angepasst werden soll
+            startIndex = allMatches.findIndex(m => m.id === startFromMatchId);
+            if (startIndex < 0) startIndex = 0;
+            // Hole ggf. die manuell gesetzte Startzeit
+            const manualStart = allMatches[startIndex].startTime;
+            if (manualStart) {
+                const [h, m] = manualStart.split(':').map(Number);
+                currentTime = new Date('2025-07-05T' + h.toString().padStart(2, '0') + ':' + m.toString().padStart(2, '0') + ':00');
+            }
+        }
+        for (let i = startIndex; i < allMatches.length; i++) {
+            let m = allMatches[i];
+            // Pausenspiel: Pause mit individueller Dauer
+            if (m.phase === 'pause' && m.pauseDuration) {
+                m.startTime = currentTime.getHours().toString().padStart(2, '0') + ':' + currentTime.getMinutes().toString().padStart(2, '0');
+                currentTime = new Date(currentTime.getTime() + m.pauseDuration * 60 * 1000);
+                m.endTime = currentTime.getHours().toString().padStart(2, '0') + ':' + currentTime.getMinutes().toString().padStart(2, '0');
+            } else {
+                // Normales Spiel
+                m.startTime = currentTime.getHours().toString().padStart(2, '0') + ':' + currentTime.getMinutes().toString().padStart(2, '0');
+                currentTime = new Date(currentTime.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
+                m.endTime = currentTime.getHours().toString().padStart(2, '0') + ':' + currentTime.getMinutes().toString().padStart(2, '0');
+                // Nach jedem Spiel (außer letztem oder wenn nächstes ein Pausenspiel ist): Standardpause
+                const next = allMatches[i + 1];
+                if (next && !(next.phase === 'pause' && next.pauseDuration)) {
+                    currentTime = new Date(currentTime.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
+                }
+            }
+        }
+        // Schreibe die neuen Zeiten zurück in die Struktur
+        matches.vorrunde = allMatches.filter(m => m.phase === 'vorrunde');
+        matches.ko = allMatches.filter(m => m.phase !== 'vorrunde');
+        await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+        return matches;
+    } catch (error) {
+        console.error('Fehler bei der Zeitberechnung:', error);
+        return matches;
+    }
+}
+
+// 3. Nach jedem Vorrundenspiel: Standings und KO prüfen
+// (In /api/matches/:id/score nach dem Speichern und vor res.json)
+// await calculateStandingsFile();
+// await fillKOMatchesFromStandingsFile();
+// await recalculateMatchTimesFile(matches);
+
+// Hilfsskript: Standings automatisch generieren
+if (require.main === module && process.argv[2] === 'generate-standings') {
+    (async () => {
+        const teams = await fs.readJson(TEAMS_JSON);
+        let standings;
+        if (teams.length === 8) {
+            standings = {
+                A: teams.slice(0, 4).map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: 'A' })),
+                B: teams.slice(4, 8).map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: 'B' }))
+            };
+        } else if (teams.length === 9) {
+            standings = {
+                A: teams.slice(0, 3).map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: 'A' })),
+                B: teams.slice(3, 6).map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: 'B' })),
+                C: teams.slice(6, 9).map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: 'C' }))
+            };
+        } else {
+            standings = teams.map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: null }));
+        }
+        await fs.writeJson(STANDINGS_JSON, standings, { spaces: 2 });
+        console.log('standings.json wurde für', teams.length, 'Teams generiert!');
+    })();
+}
+
+// Hilfsfunktion: Spielplan und Standings neu generieren
+async function regenerateScheduleAndStandings() {
+    const teams = await fs.readJson(TEAMS_JSON);
+    // Spielplan generieren
+    const { vorrunde, ko } = generateVorrundeAndKO(teams);
+    let matches = { vorrunde, ko };
+    matches = await recalculateMatchTimesFile(matches);
+    await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+    // Standings generieren
+    if (teams.length === 8) {
+        const standings = {
+            A: teams.slice(0, 4).map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: 'A' })),
+            B: teams.slice(4, 8).map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: 'B' }))
+        };
+        await fs.writeJson(STANDINGS_JSON, standings, { spaces: 2 });
+    } else if (teams.length === 9) {
+        const standings = {
+            A: teams.slice(0, 3).map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: 'A' })),
+            B: teams.slice(3, 6).map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: 'B' })),
+            C: teams.slice(6, 9).map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: 'C' }))
+        };
+        await fs.writeJson(STANDINGS_JSON, standings, { spaces: 2 });
+    } else {
+        const standings = teams.map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: null }));
+        await fs.writeJson(STANDINGS_JSON, standings, { spaces: 2 });
+    }
 }
 
 // ... existing code ...
-// Beispiel: Nach Team-Hinzufügen
-app.post('/api/teams', async (req, res) => {
-    // ... Team hinzufügen ...
-    await updateTournamentState();
-    res.json({ success: true });
-});
-// Beispiel: Nach Team-Löschen
-app.delete('/api/teams/:name', async (req, res) => {
-    // ... Team löschen ...
-    await updateTournamentState();
-    res.json({ success: true });
-});
-// Beispiel: Nach Team-Umbenennen
-app.put('/api/teams/:name', async (req, res) => {
-    // ... Team umbenennen ...
-    await updateTournamentState();
-    res.json({ success: true });
-});
-// Beispiel: Nach Mischen/Reset
-app.post('/api/teams/shuffle', async (req, res) => {
-    // ... Teams mischen ...
-    await updateTournamentState();
-    res.json({ success: true });
+// API: Startzeit für das erste Spiel setzen
+app.post('/api/startzeit', requireAuth, async (req, res) => {
+    try {
+        const { zeit } = req.body;
+        if (!zeit || !/^[0-2][0-9]:[0-5][0-9]$/.test(zeit)) {
+            return res.status(400).json({ success: false, message: 'Ungültige Zeit' });
+        }
+        let matches = await fs.readJson(MATCHES_JSON);
+        // Setze die Startzeit des ersten Spiels
+        let allMatches = [...(matches.vorrunde || []), ...(matches.ko || [])];
+        if (allMatches.length === 0) return res.status(400).json({ success: false, message: 'Kein Spielplan vorhanden' });
+        allMatches[0].startTime = zeit;
+        // Zeitplan ab erstem Spiel neu berechnen
+        matches.vorrunde = allMatches.filter(m => m.phase === 'vorrunde');
+        matches.ko = allMatches.filter(m => m.phase !== 'vorrunde');
+        await recalculateMatchTimesFile(matches, allMatches[0].id);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Fehler beim Setzen der Startzeit:', error);
+        res.status(500).json({ success: false, message: 'Fehler beim Setzen der Startzeit', error: error.message });
+    }
 });
 // ... existing code ...

@@ -1020,8 +1020,11 @@ app.get('/api/teams', async (req, res) => {
 // API: Matches abrufen
 app.get('/api/matches', async (req, res) => {
     try {
-        const matches = await Match.find();
-        res.json(matches);
+        const all = await Match.find();
+        res.json({
+            vorrunde: all.filter(m => m.phase === 'vorrunde'),
+            ko: all.filter(m => m.phase === 'ko' || m.phase === 'pause')
+        });
     } catch (error) {
         res.status(500).json({ error: 'Fehler beim Laden der Matches' });
     }

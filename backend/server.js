@@ -841,11 +841,17 @@ async function saveSettings(newSettings) {
 
 // Hilfsfunktion: Spielplan fortlaufend neu berechnen (Startzeiten, Endzeiten, Pausen)
 async function recalculateMatchTimes(matches, startFromMatchId = null) {
-    // Reihenfolge exakt wie im Array, keine Sortierung nach ID!
     let allMatches = [...matches.vorrunde, ...matches.ko];
     // Wenn keine gezielte Neuberechnung: wie bisher
     if (!startFromMatchId) {
-        let currentTime = new Date('2025-07-05T14:00:00');
+        // Bei 9 Teams: Startzeit des ersten Spiels übernehmen, falls gesetzt
+        let currentTime;
+        if (matches.vorrunde && matches.vorrunde.length > 0 && matches.vorrunde[0].startTime) {
+            const [h, m] = matches.vorrunde[0].startTime.split(':').map(Number);
+            currentTime = new Date('2025-07-05T' + matches.vorrunde[0].startTime + ':00');
+        } else {
+            currentTime = new Date('2025-07-05T14:00:00');
+        }
         for (let i = 0; i < allMatches.length; i++) {
             let m = allMatches[i];
             // Pause nach Vorrunde/letztem Gruppenspiel

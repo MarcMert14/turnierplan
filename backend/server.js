@@ -1532,3 +1532,46 @@ async function recalculateMatchTimes(matches, startFromMatchId = null) {
     return matches;
 }
 // ... existing code ...
+
+// Zentrale Funktion: Turnier nach Teamänderung komplett neu aufbauen
+async function updateTournamentState() {
+    const teams = await Team.find();
+    // 1. Matches neu generieren
+    const matches = await generateMatches(teams);
+    // 2. Zeiten für alle Spiele setzen
+    await recalculateMatchTimes(matches);
+    // 3. Matches in DB speichern (ersetzen)
+    await Match.deleteMany({});
+    await Match.insertMany([...matches.vorrunde, ...matches.ko]);
+    // 4. Standings mit Gruppenzuordnung neu berechnen
+    await recalculateStandingsMongo();
+    // 5. KO-Phase automatisch befüllen
+    await updateKOMatchesMongo();
+}
+
+// ... existing code ...
+// Beispiel: Nach Team-Hinzufügen
+app.post('/api/teams', async (req, res) => {
+    // ... Team hinzufügen ...
+    await updateTournamentState();
+    res.json({ success: true });
+});
+// Beispiel: Nach Team-Löschen
+app.delete('/api/teams/:name', async (req, res) => {
+    // ... Team löschen ...
+    await updateTournamentState();
+    res.json({ success: true });
+});
+// Beispiel: Nach Team-Umbenennen
+app.put('/api/teams/:name', async (req, res) => {
+    // ... Team umbenennen ...
+    await updateTournamentState();
+    res.json({ success: true });
+});
+// Beispiel: Nach Mischen/Reset
+app.post('/api/teams/shuffle', async (req, res) => {
+    // ... Teams mischen ...
+    await updateTournamentState();
+    res.json({ success: true });
+});
+// ... existing code ...

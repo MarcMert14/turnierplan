@@ -1522,32 +1522,32 @@ async function updateKOMatchesMongo() {
             if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
             return a.name.localeCompare(b.name);
         });
-        // KO-Spiele setzen
+        // KO-Spiele setzen (exakt nach Turnierlogik)
         const koMatches = matches.filter(m => m.phase === 'ko');
         for (const match of koMatches) {
             if (match.id === 'AF1') {
-                match.team1 = sorted[6]?.name || 'Platz 7';
-                match.team2 = sorted[9]?.name || 'Platz 10';
+                match.team1 = sorted[6]?.name || 'Platz 7'; // Platz 7
+                match.team2 = sorted[9]?.name || 'Platz 10'; // Platz 10
             }
             if (match.id === 'AF2') {
-                match.team1 = sorted[7]?.name || 'Platz 8';
-                match.team2 = sorted[8]?.name || 'Platz 9';
+                match.team1 = sorted[7]?.name || 'Platz 8'; // Platz 8
+                match.team2 = sorted[8]?.name || 'Platz 9'; // Platz 9
             }
             if (match.id === 'VF1') {
-                match.team1 = sorted[2]?.name || 'Platz 3';
-                match.team2 = sorted[5]?.name || 'Platz 6';
+                match.team1 = sorted[2]?.name || 'Platz 3'; // Platz 3
+                match.team2 = sorted[5]?.name || 'Platz 6'; // Platz 6
             }
             if (match.id === 'VF2') {
-                match.team1 = sorted[3]?.name || 'Platz 4';
-                match.team2 = sorted[4]?.name || 'Platz 5';
+                match.team1 = sorted[3]?.name || 'Platz 4'; // Platz 4
+                match.team2 = sorted[4]?.name || 'Platz 5'; // Platz 5
             }
             if (match.id === 'VF3') {
-                match.team1 = sorted[1]?.name || 'Platz 2';
-                // team2 wird durch Sieger AF1 ersetzt
+                match.team1 = sorted[1]?.name || 'Platz 2'; // Platz 2
+                match.team2 = 'Sieger AF1';
             }
             if (match.id === 'VF4') {
-                match.team1 = sorted[0]?.name || 'Platz 1';
-                // team2 wird durch Sieger AF2 ersetzt
+                match.team1 = sorted[0]?.name || 'Platz 1'; // Platz 1
+                match.team2 = 'Sieger AF2';
             }
             if (match.id === 'HF1') {
                 // team1 wird durch Sieger VF3 ersetzt

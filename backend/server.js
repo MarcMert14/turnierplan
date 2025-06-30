@@ -12,7 +12,10 @@ const app = express();
 const PORT = 3001;
 
 app.use(cors({
-    origin: 'https://turnierplan-frontend.onrender.com',
+    origin: [
+        'https://turnierplan-frontend.onrender.com',
+        'http://localhost:3000'
+    ],
     credentials: true
 }));
 app.use(bodyParser.json());

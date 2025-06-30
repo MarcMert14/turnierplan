@@ -843,13 +843,8 @@ async function saveSettings(newSettings) {
 async function recalculateMatchTimes(matches, startFromMatchId = null) {
     let allMatches = [...matches.vorrunde, ...matches.ko];
     if (!startFromMatchId) {
-        // Startzeit des ersten Spiels übernehmen, falls gesetzt, sonst 14:00
-        let currentTime;
-        if (matches.vorrunde && matches.vorrunde.length > 0 && matches.vorrunde[0].startTime) {
-            currentTime = new Date('2025-07-05T' + matches.vorrunde[0].startTime + ':00');
-        } else {
-            currentTime = new Date('2025-07-05T14:00:00');
-        }
+        // Startzeit immer 14:00 für das erste Spiel
+        let currentTime = new Date('2025-07-05T14:00:00');
         for (let i = 0; i < allMatches.length; i++) {
             let m = allMatches[i];
             // Pause nach Vorrunde/letztem Gruppenspiel
@@ -897,7 +892,6 @@ async function recalculateMatchTimes(matches, startFromMatchId = null) {
         }
     }
     // ... bestehender Code ...
-
     matches.vorrunde = allMatches.filter(m => m.phase === 'vorrunde');
     matches.ko = allMatches.filter(m => m.phase !== 'vorrunde');
     return matches;
@@ -1456,20 +1450,19 @@ async function recalculateStandingsMongo() {
     const teams = await Team.find();
     // Standings neu berechnen
     let standings = teams.map(t => ({ name: t.name, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 }));
-    // Gruppenzuordnung für 8 Teams
-    if (teams.length === 8) {
-        teams.forEach((t, idx) => {
-            const gruppe = idx < 4 ? 'A' : 'B';
-            let standing = standings.find(s => s.name === t.name);
-            if (standing) standing.gruppe = gruppe;
+    // Gruppenzuordnung robust anhand der Vorrundenspiele
+    if (matches && matches.length > 0) {
+        const gruppenMap = {};
+        (matches.filter(m => m.phase === 'vorrunde')).forEach(m => {
+            if (m.round && m.round.match(/Gruppe ([A-Z])/)) {
+                const gruppe = m.round.match(/Gruppe ([A-Z])/)[1];
+                [m.team1, m.team2].forEach(teamName => {
+                    gruppenMap[teamName] = gruppe;
+                });
+            }
         });
-    }
-    // Gruppenzuordnung für 9 Teams
-    if (teams.length === 9) {
-        teams.forEach((t, idx) => {
-            const gruppe = idx < 3 ? 'A' : idx < 6 ? 'B' : 'C';
-            let standing = standings.find(s => s.name === t.name);
-            if (standing) standing.gruppe = gruppe;
+        standings.forEach(s => {
+            if (gruppenMap[s.name]) s.gruppe = gruppenMap[s.name];
         });
     }
     // Nur Vorrunden-/Gruppenspiele zählen!

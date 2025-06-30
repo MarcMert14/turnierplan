@@ -841,11 +841,8 @@ async function saveSettings(newSettings) {
 
 // Hilfsfunktion: Spielplan fortlaufend neu berechnen (Startzeiten, Endzeiten, Pausen)
 async function recalculateMatchTimes(matches, startFromMatchId = null) {
+    // Reihenfolge exakt wie im Array, keine Sortierung nach ID!
     let allMatches = [...matches.vorrunde, ...matches.ko];
-    allMatches.sort((a, b) => {
-        if (a.phase !== b.phase) return a.phase === 'vorrunde' ? -1 : 1;
-        return a.id.localeCompare(b.id, undefined, { numeric: true });
-    });
     // Wenn keine gezielte Neuberechnung: wie bisher
     if (!startFromMatchId) {
         let currentTime = new Date('2025-07-05T14:00:00');
@@ -1504,6 +1501,22 @@ async function recalculateStandingsMongo() {
     const teams = await Team.find();
     // Standings neu berechnen
     let standings = teams.map(t => ({ name: t.name, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 }));
+    // Gruppenzuordnung für 8 Teams
+    if (teams.length === 8) {
+        teams.forEach((t, idx) => {
+            const gruppe = idx < 4 ? 'A' : 'B';
+            let standing = standings.find(s => s.name === t.name);
+            if (standing) standing.gruppe = gruppe;
+        });
+    }
+    // Gruppenzuordnung für 9 Teams
+    if (teams.length === 9) {
+        teams.forEach((t, idx) => {
+            const gruppe = idx < 3 ? 'A' : idx < 6 ? 'B' : 'C';
+            let standing = standings.find(s => s.name === t.name);
+            if (standing) standing.gruppe = gruppe;
+        });
+    }
     // Nur Vorrunden-/Gruppenspiele zählen!
     matches.filter(m => m.phase === 'vorrunde').forEach(match => {
         if (typeof match.score1 === 'number' && typeof match.score2 === 'number' && match.score1 !== null && match.score2 !== null) {

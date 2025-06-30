@@ -842,12 +842,10 @@ async function saveSettings(newSettings) {
 // Hilfsfunktion: Spielplan fortlaufend neu berechnen (Startzeiten, Endzeiten, Pausen)
 async function recalculateMatchTimes(matches, startFromMatchId = null) {
     let allMatches = [...matches.vorrunde, ...matches.ko];
-    // Wenn keine gezielte Neuberechnung: wie bisher
     if (!startFromMatchId) {
-        // Bei 9 Teams: Startzeit des ersten Spiels übernehmen, falls gesetzt
+        // Startzeit des ersten Spiels übernehmen, falls gesetzt, sonst 14:00
         let currentTime;
         if (matches.vorrunde && matches.vorrunde.length > 0 && matches.vorrunde[0].startTime) {
-            const [h, m] = matches.vorrunde[0].startTime.split(':').map(Number);
             currentTime = new Date('2025-07-05T' + matches.vorrunde[0].startTime + ':00');
         } else {
             currentTime = new Date('2025-07-05T14:00:00');
@@ -885,11 +883,11 @@ async function recalculateMatchTimes(matches, startFromMatchId = null) {
                 continue;
             }
             // Spiel
-            const matchStart = new Date(currentTime);
-            const matchEnd = new Date(matchStart.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
-            m.startTime = `${matchStart.getHours().toString().padStart(2, '0')}:${matchStart.getMinutes().toString().padStart(2, '0')}`;
+            m.startTime = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`;
+            const matchEnd = new Date(currentTime.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
             m.endTime = `${matchEnd.getHours().toString().padStart(2, '0')}:${matchEnd.getMinutes().toString().padStart(2, '0')}`;
             currentTime = new Date(matchEnd.getTime());
+            // Nach jedem Spiel: Pause, außer nach dem letzten
             const next = allMatches[i + 1];
             if (next && next.phase === 'pause' && (next.id === 'pause1' || next.id === 'pause2' || next.id === 'pause3')) {
                 continue;
@@ -898,57 +896,8 @@ async function recalculateMatchTimes(matches, startFromMatchId = null) {
             currentTime = new Date(currentTime.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
         }
     }
-    // Falls gezielte Neuberechnung ab bestimmtem Spiel
-    else {
-        // Finde Index des geänderten Spiels
-        const idx = allMatches.findIndex(m => m.id === startFromMatchId);
-        if (idx === -1) return matches;
-        // Startzeit für das geänderte Spiel übernehmen
-        let currentTime = new Date('2025-07-05T' + allMatches[idx].startTime + ':00');
-        // Alle Spiele davor bleiben wie sie sind
-        for (let i = idx; i < allMatches.length; i++) {
-            let m = allMatches[i];
-            if (m.phase === 'pause' && (m.id === 'pause1')) {
-                let pauseLen = 20;
-                const pauseStart = new Date(currentTime);
-                const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
-                m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
-                m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
-                currentTime = new Date(pauseEnd.getTime());
-                continue;
-            }
-            if (m.phase === 'pause' && (m.id === 'pause2' || m.id === 'pause3')) {
-                let pauseLen = 10;
-                const pauseStart = new Date(currentTime);
-                const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
-                m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
-                m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
-                currentTime = new Date(pauseEnd.getTime());
-                continue;
-            }
-            if (m.phase === 'pause') {
-                let pauseLen = PAUSENZEIT_MINUTEN;
-                const pauseStart = new Date(currentTime);
-                const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
-                m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
-                m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
-                currentTime = new Date(pauseEnd.getTime());
-                continue;
-            }
-            // Spiel
-            const matchStart = new Date(currentTime);
-            const matchEnd = new Date(matchStart.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
-            m.startTime = `${matchStart.getHours().toString().padStart(2, '0')}:${matchStart.getMinutes().toString().padStart(2, '0')}`;
-            m.endTime = `${matchEnd.getHours().toString().padStart(2, '0')}:${matchEnd.getMinutes().toString().padStart(2, '0')}`;
-            currentTime = new Date(matchEnd.getTime());
-            const next = allMatches[i + 1];
-            if (next && next.phase === 'pause' && (next.id === 'pause1' || next.id === 'pause2' || next.id === 'pause3')) {
-                continue;
-            }
-            if (i === allMatches.length - 1) break;
-            currentTime = new Date(currentTime.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
-        }
-    }
+    // ... bestehender Code ...
+
     matches.vorrunde = allMatches.filter(m => m.phase === 'vorrunde');
     matches.ko = allMatches.filter(m => m.phase !== 'vorrunde');
     return matches;

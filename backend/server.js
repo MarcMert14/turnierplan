@@ -300,7 +300,7 @@ async function generateMatches(teams) {
                 score1: null,
                 score2: null,
                 status: 'geplant',
-                startTime: null,
+                startTime: idx === 0 ? '14:00' : null,
                 endTime: null
             });
         });

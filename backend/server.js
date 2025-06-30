@@ -982,10 +982,9 @@ app.get('/api/standings', async (req, res) => {
         if (teams.length === 8 || teams.length === 9) {
             let standings = {};
             standingsArr.forEach(s => {
-                if (s.gruppe) {
-                    if (!standings[s.gruppe]) standings[s.gruppe] = [];
-                    standings[s.gruppe].push(s);
-                }
+                let gruppe = s.gruppe || 'X'; // Teams ohne Gruppe in "X"
+                if (!standings[gruppe]) standings[gruppe] = [];
+                standings[gruppe].push(s);
             });
             res.json(standings);
         } else {
@@ -1436,18 +1435,19 @@ const standingSchema = new mongoose.Schema({
     goalsFor: Number,
     goalsAgainst: Number,
     points: Number,
-    gruppe: String // <-- Gruppenzuordnung für Gruppentabellen
-});
+    gruppe: String
+}, { strict: false }); // <-- strict: false erlaubt zusätzliche Felder
 const Standing = mongoose.model('Standing', standingSchema);
 
 // Hilfsfunktionen für Standings und KO-Phase mit MongoDB
 async function recalculateStandingsMongo() {
-    // Alle Matches laden
     const matches = await Match.find();
     const teams = await Team.find();
-    // Standings neu berechnen
-    let standings = teams.map(t => ({ name: t.name, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 }));
-    // Gruppenzuordnung für jedes Team anhand der Gruppenspiele (phase: 'vorrunde', round: 'Gruppe X')
+    let standings = teams.map(t => ({
+        name: t.name, played: 0, won: 0, drawn: 0, lost: 0,
+        goalsFor: 0, goalsAgainst: 0, points: 0, gruppe: null
+    }));
+    // Gruppenzuordnung für jedes Team anhand der Gruppenspiele
     const gruppenMap = {};
     matches.filter(m => m.phase === 'vorrunde' && m.round && m.round.match(/Gruppe ([A-Z])/)).forEach(m => {
         const gruppe = m.round.match(/Gruppe ([A-Z])/)[1];
@@ -1458,9 +1458,9 @@ async function recalculateStandingsMongo() {
     standings.forEach(s => {
         if (gruppenMap[s.name]) s.gruppe = gruppenMap[s.name];
     });
-    // Nur Gruppenspiele zählen!
+    // Statistiken berechnen
     matches.filter(m => m.phase === 'vorrunde').forEach(match => {
-        if (typeof match.score1 === 'number' && typeof match.score2 === 'number' && match.score1 !== null && match.score2 !== null) {
+        if (typeof match.score1 === 'number' && typeof match.score2 === 'number') {
             let t1 = standings.find(t => t.name === match.team1);
             let t2 = standings.find(t => t.name === match.team2);
             if (t1 && t2) {
@@ -1473,9 +1473,16 @@ async function recalculateStandingsMongo() {
             }
         }
     });
+    // Logging zur Kontrolle
+    console.log('Standings to insert:', standings);
     // Standings in DB ersetzen
     await Standing.deleteMany({});
-    await Standing.insertMany(standings);
+    for (const s of standings) {
+        await Standing.create(s);
+    }
+    // Logging nach dem Insert
+    const saved = await Standing.find();
+    console.log('Standings in DB:', saved);
 }
 
 async function recalculateMatchTimes(matches, startFromMatchId = null) {

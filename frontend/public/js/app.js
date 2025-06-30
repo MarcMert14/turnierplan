@@ -274,9 +274,10 @@ function displayStandings(standings) {
     if (typeof standings === 'object' && !Array.isArray(standings)) {
         el.innerHTML = '';
         Object.entries(standings).forEach(([gruppe, teams]) => {
+            let groupTitle = gruppe === 'X' ? 'Gruppe X (ohne Zuordnung)' : `Gruppe ${gruppe}`;
             el.innerHTML += `
                 <div class="standings-group">
-                    <h4>Gruppe ${gruppe}</h4>
+                    <h4>${groupTitle}</h4>
                     <div class="standings-table">
                         <div class="header">
                             <span>Platz</span>

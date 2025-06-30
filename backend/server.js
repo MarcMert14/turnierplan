@@ -1436,7 +1436,7 @@ const standingSchema = new mongoose.Schema({
     goalsFor: Number,
     goalsAgainst: Number,
     points: Number,
-    gruppe: String
+    gruppe: String // <-- Gruppenzuordnung für Gruppentabellen
 });
 const Standing = mongoose.model('Standing', standingSchema);
 

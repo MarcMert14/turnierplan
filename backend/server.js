@@ -1103,89 +1103,61 @@ function requireAuth(req, res, next) {
 app.put('/api/matches/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     let { score1, score2 } = req.body;
-    let matches = await fs.readJson(MATCHES_JSON).catch(() => ({ vorrunde: [], ko: [] }));
-    
-    // Spiel in Vorrunde oder K.o.-Phase finden
-    let match = matches.vorrunde.find(m => m.id === id) || matches.ko.find(m => m.id === id);
-    if (!match) return res.status(404).json({ message: 'Match nicht gefunden' });
-    
-    // Robust: Standardwert 0, falls undefined
-    if (typeof score1 !== 'number' && score1 !== null) score1 = 0;
-    if (typeof score2 !== 'number' && score2 !== null) score2 = 0;
-
-    // Wenn Ergebnis gelöscht wird (beide null), setze Status zurück
-    const wasCompleted = match.status === 'completed';
-    const oldScore1 = match.score1;
-    const oldScore2 = match.score2;
-    match.score1 = score1;
-    match.score2 = score2;
-    if (score1 === null && score2 === null) {
-        match.status = 'geplant';
-    } else if (score1 !== null && score2 !== null) {
-        match.status = 'completed';
-    } else {
-        match.status = 'geplant';
-    }
-    await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
-
-    // Standings aktualisieren
-    await recalculateStandings();
-    
-    // KO-Phase nach Gruppenabschluss automatisch befüllen (8/9 Teams)
-    const teams = await fs.readJson(TEAMS_JSON).catch(() => []);
-    if (teams.length === 8 || teams.length === 9) {
-        // Prüfe, ob alle Gruppenspiele abgeschlossen sind
-        let standings = await fs.readJson(STANDINGS_JSON).catch(() => []);
-        const gruppen = Object.keys(standings);
-        let allGroupsCompleted = gruppen.every(gruppe => {
-            const groupMatches = (matches.vorrunde || []).filter(m => m.round && m.round.includes(gruppe));
-            return groupMatches.every(m => m.status === 'completed');
-        });
-        if (allGroupsCompleted) {
-            await updateKOMatches(standings);
+    try {
+        // Match aus DB holen
+        let match = await Match.findOne({ id });
+        if (!match) return res.status(404).json({ message: 'Match nicht gefunden' });
+        // Ergebnis setzen
+        match.score1 = score1;
+        match.score2 = score2;
+        if (score1 === null && score2 === null) {
+            match.status = 'geplant';
+        } else if (score1 !== null && score2 !== null) {
+            match.status = 'completed';
+        } else {
+            match.status = 'geplant';
         }
+        await match.save();
+        // Standings aktualisieren
+        await recalculateStandingsMongo();
+        // KO-Phase ggf. aktualisieren
+        if (match.phase === 'ko' && match.status === 'completed') {
+            await advanceKOMatchesMongo();
+        }
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ message: 'Fehler beim Speichern', error: error.message });
     }
-    // Wenn es ein KO-Spiel ist und abgeschlossen wurde, KO-Phase weiterführen
-    if (match.phase === 'ko' && match.status === 'completed') {
-        await advanceKOMatches();
-    }
-    
-    res.json({ success: true });
 });
 
-// API: Match-Zeit anpassen (Admin)
+// Zeit-Update (Admin)
 app.put('/api/matches/:id/time', requireAuth, async (req, res) => {
     const { id } = req.params;
     const { time, pauseDuration } = req.body;
-    let matches = await fs.readJson(MATCHES_JSON).catch(() => ({ vorrunde: [], ko: [] }));
-    let allMatches = [...matches.vorrunde, ...matches.ko];
-    allMatches.sort((a, b) => {
-        // Vorrunde zuerst, dann KO, innerhalb jeweils nach id
-        if (a.phase !== b.phase) return a.phase === 'vorrunde' ? -1 : 1;
-        return a.id.localeCompare(b.id, undefined, { numeric: true });
-    });
-    const matchIndex = allMatches.findIndex(m => m.id === id);
-    if (matchIndex === -1) return res.status(404).json({ message: 'Match nicht gefunden' });
-    // Zeit in vollständiges Datum umwandeln (2025-07-05 + eingegebene Zeit)
-    const [hours, minutes] = time.split(':');
-    let newStartTime = new Date(2025, 6, 5, parseInt(hours), parseInt(minutes), 0); // Juli = 6 (0-basiert)
-    let newEndTime;
-    if (allMatches[matchIndex].phase === 'pause') {
-        let pauseLen = pauseDuration || allMatches[matchIndex].pauseDuration || 15;
-        if (allMatches[matchIndex].id === 'pause2' || allMatches[matchIndex].id === 'pause3') pauseLen = pauseDuration || allMatches[matchIndex].pauseDuration || 10;
-        newEndTime = new Date(newStartTime.getTime() + pauseLen * 60 * 1000);
-        allMatches[matchIndex].pauseDuration = pauseLen;
-    } else {
-        newEndTime = new Date(newStartTime.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
+    try {
+        let match = await Match.findOne({ id });
+        if (!match) return res.status(404).json({ message: 'Match nicht gefunden' });
+        // Zeit setzen
+        match.startTime = time;
+        if (match.phase === 'pause' && pauseDuration) {
+            match.pauseDuration = pauseDuration;
+            // Endzeit berechnen
+            let [h, m] = time.split(':').map(Number);
+            let start = new Date(2025, 6, 5, h, m, 0);
+            let end = new Date(start.getTime() + pauseDuration * 60 * 1000);
+            match.endTime = `${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
+        } else {
+            // Endzeit für normales Spiel
+            let [h, m] = time.split(':').map(Number);
+            let start = new Date(2025, 6, 5, h, m, 0);
+            let end = new Date(start.getTime() + 8 * 60 * 1000); // 8 Minuten Spielzeit (TODO: dynamisch)
+            match.endTime = `${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
+        }
+        await match.save();
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ message: 'Fehler beim Speichern', error: error.message });
     }
-    allMatches[matchIndex].startTime = `${newStartTime.getHours().toString().padStart(2, '0')}:${newStartTime.getMinutes().toString().padStart(2, '0')}`;
-    allMatches[matchIndex].endTime = `${newEndTime.getHours().toString().padStart(2, '0')}:${newEndTime.getMinutes().toString().padStart(2, '0')}`;
-    // Nach manueller Änderung: ALLE Zeiten ab diesem Spiel fortlaufend neu berechnen!
-    matches.vorrunde = allMatches.filter(m => m.phase === 'vorrunde');
-    matches.ko = allMatches.filter(m => m.phase !== 'vorrunde');
-    matches = await recalculateMatchTimes(matches, id);
-    await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
-    res.json({ success: true });
 });
 
 // API: Match-Score für einzelnes Team (Admin)
@@ -1243,13 +1215,11 @@ app.post('/api/matches/:id/score', requireAuth, async (req, res) => {
 // API: KO-Phase manuell aktualisieren (Admin)
 app.post('/api/ko/update', requireAuth, async (req, res) => {
     try {
-        let standings = await fs.readJson(STANDINGS_JSON).catch(() => []);
-        await updateKOMatches(standings);
-        await advanceKOMatches();
+        await updateKOMatchesMongo();
+        await advanceKOMatchesMongo();
         res.json({ success: true, message: 'KO-Phase aktualisiert' });
     } catch (error) {
-        console.error('Fehler beim Aktualisieren der KO-Phase:', error);
-        res.status(500).json({ success: false, message: 'Fehler beim Aktualisieren der KO-Phase' });
+        res.status(500).json({ success: false, message: 'Fehler beim Aktualisieren der KO-Phase', error: error.message });
     }
 });
 
@@ -1301,13 +1271,23 @@ app.put('/api/teams/:oldName', requireAuth, async (req, res) => {
 // API: Turnier komplett zurücksetzen (Admin)
 app.post('/api/reset', requireAuth, async (req, res) => {
     try {
-        // Teams beibehalten
-        const teams = await fs.readJson(TEAMS_JSON).catch(() => []);
-        // Neue Matches und Standings generieren
+        // Teams aus MongoDB laden
+        const teams = await Team.find().sort({ _id: 1 });
+        // Matches generieren
         const matches = await generateMatches(teams);
-        await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+        // Alte Matches in MongoDB löschen
+        await Match.deleteMany({});
+        // Neue Matches in MongoDB speichern
+        const allMatches = [...(matches.vorrunde || []), ...(matches.ko || [])];
+        if (allMatches.length > 0) {
+            await Match.insertMany(allMatches);
+        }
+        // Standings generieren und speichern
+        await Standing.deleteMany({});
         const standings = teams.map(t => ({ name: t.name, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 }));
-        await fs.writeJson(STANDINGS_JSON, standings, { spaces: 2 });
+        if (standings.length > 0) {
+            await Standing.insertMany(standings);
+        }
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Fehler beim Zurücksetzen', error: error.message });
@@ -1457,3 +1437,208 @@ const standingSchema = new mongoose.Schema({
     gruppe: String
 });
 const Standing = mongoose.model('Standing', standingSchema);
+
+// Hilfsfunktionen für Standings und KO-Phase mit MongoDB
+async function recalculateStandingsMongo() {
+    // Alle Matches laden
+    const matches = await Match.find();
+    const teams = await Team.find();
+    // Standings neu berechnen
+    let standings = teams.map(t => ({ name: t.name, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 }));
+    matches.forEach(match => {
+        if (typeof match.score1 === 'number' && typeof match.score2 === 'number' && match.score1 !== null && match.score2 !== null) {
+            let t1 = standings.find(t => t.name === match.team1);
+            let t2 = standings.find(t => t.name === match.team2);
+            if (t1 && t2) {
+                t1.played++; t2.played++;
+                t1.goalsFor += match.score1; t1.goalsAgainst += match.score2;
+                t2.goalsFor += match.score2; t2.goalsAgainst += match.score1;
+                if (match.score1 > match.score2) { t1.won++; t1.points += 3; t2.lost++; }
+                else if (match.score1 < match.score2) { t2.won++; t2.points += 3; t1.lost++; }
+                else { t1.drawn++; t2.drawn++; t1.points++; t2.points++; }
+            }
+        }
+    });
+    // Standings in DB ersetzen
+    await Standing.deleteMany({});
+    await Standing.insertMany(standings);
+}
+
+async function updateKOMatchesMongo() {
+    // Alle relevanten Daten laden
+    const matches = await Match.find();
+    const standingsArr = await Standing.find();
+    const teams = await Team.find();
+    // Gruppierte Standings für 8/9 Teams
+    let standings = {};
+    if (teams.length === 8 || teams.length === 9) {
+        // Gruppieren nach Gruppe, falls vorhanden
+        standingsArr.forEach(s => {
+            if (s.gruppe) {
+                if (!standings[s.gruppe]) standings[s.gruppe] = [];
+                standings[s.gruppe].push(s);
+            }
+        });
+    } else {
+        standings = standingsArr;
+    }
+    // 10 Teams: Platzierungen sortieren
+    if (teams.length === 10) {
+        const sorted = [...standingsArr].sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            const diffA = a.goalsFor - a.goalsAgainst;
+            const diffB = b.goalsFor - b.goalsAgainst;
+            if (diffB !== diffA) return diffB - diffA;
+            if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+            return a.name.localeCompare(b.name);
+        });
+        // KO-Spiele setzen
+        const koMatches = matches.filter(m => m.phase === 'ko');
+        for (const match of koMatches) {
+            if (match.id === 'AF1') {
+                match.team1 = sorted[6]?.name || 'Platz 7';
+                match.team2 = sorted[9]?.name || 'Platz 10';
+            }
+            if (match.id === 'AF2') {
+                match.team1 = sorted[7]?.name || 'Platz 8';
+                match.team2 = sorted[8]?.name || 'Platz 9';
+            }
+            if (match.id === 'VF1') {
+                match.team1 = sorted[2]?.name || 'Platz 3';
+                match.team2 = sorted[5]?.name || 'Platz 6';
+            }
+            if (match.id === 'VF2') {
+                match.team1 = sorted[3]?.name || 'Platz 4';
+                match.team2 = sorted[4]?.name || 'Platz 5';
+            }
+            if (match.id === 'VF3') {
+                match.team1 = sorted[1]?.name || 'Platz 2';
+                // team2 wird durch Sieger AF1 ersetzt
+            }
+            if (match.id === 'VF4') {
+                match.team1 = sorted[0]?.name || 'Platz 1';
+                // team2 wird durch Sieger AF2 ersetzt
+            }
+            if (match.id === 'HF1') {
+                // team1 wird durch Sieger VF3 ersetzt
+                // team2 wird durch Sieger VF1 ersetzt
+            }
+            if (match.id === 'HF2') {
+                // team1 wird durch Sieger VF4 ersetzt
+                // team2 wird durch Sieger VF2 ersetzt
+            }
+            if (match.id === 'F1') {
+                match.team1 = 'Sieger HF1';
+                match.team2 = 'Sieger HF2';
+            }
+            await match.save();
+        }
+    }
+    // 8 Teams: Gruppenplatzierungen setzen
+    if (teams.length === 8 && typeof standings === 'object' && !Array.isArray(standings)) {
+        const gruppeA = standings['A'] || [];
+        const gruppeB = standings['B'] || [];
+        const koMatches = matches.filter(m => m.phase === 'ko');
+        for (const match of koMatches) {
+            if (match.id === 'HF1') {
+                match.team1 = gruppeA[0]?.name || '1. Gruppe A';
+                match.team2 = gruppeB[1]?.name || '2. Gruppe B';
+            }
+            if (match.id === 'HF2') {
+                match.team1 = gruppeB[0]?.name || '1. Gruppe B';
+                match.team2 = gruppeA[1]?.name || '2. Gruppe A';
+            }
+            if (match.id === 'F1') {
+                match.team1 = 'Sieger HF1';
+                match.team2 = 'Sieger HF2';
+            }
+            await match.save();
+        }
+    }
+    // 9 Teams: Gruppenplatzierungen setzen (analog, falls benötigt)
+    // ... ggf. weitere Logik für 9 Teams ...
+}
+
+async function advanceKOMatchesMongo() {
+    // Alle Matches laden
+    const matches = await Match.find();
+    // Achtelfinale → Viertelfinale, Viertelfinale → Halbfinale, Halbfinale → Finale
+    const AF1 = matches.find(m => m.id === 'AF1');
+    const AF2 = matches.find(m => m.id === 'AF2');
+    const VF3 = matches.find(m => m.id === 'VF3');
+    const VF4 = matches.find(m => m.id === 'VF4');
+    if (VF3 && AF1 && AF1.status === 'completed') {
+        const winnerAF1 = AF1.score1 > AF1.score2 ? AF1.team1 : AF1.team2;
+        VF3.team2 = winnerAF1;
+        if (VF3.status !== 'completed') VF3.status = 'geplant';
+        await VF3.save();
+    } else if (VF3 && AF1) {
+        VF3.team2 = 'Sieger AF1';
+        await VF3.save();
+    }
+    if (VF4 && AF2 && AF2.status === 'completed') {
+        const winnerAF2 = AF2.score1 > AF2.score2 ? AF2.team1 : AF2.team2;
+        VF4.team2 = winnerAF2;
+        if (VF4.status !== 'completed') VF4.status = 'geplant';
+        await VF4.save();
+    } else if (VF4 && AF2) {
+        VF4.team2 = 'Sieger AF2';
+        await VF4.save();
+    }
+    // Viertelfinale → Halbfinale
+    const VF1 = matches.find(m => m.id === 'VF1');
+    const VF2 = matches.find(m => m.id === 'VF2');
+    const HF1 = matches.find(m => m.id === 'HF1');
+    const HF2 = matches.find(m => m.id === 'HF2');
+    if (HF1) {
+        if (VF3 && VF3.status === 'completed') {
+            const winnerVF3 = VF3.score1 > VF3.score2 ? VF3.team1 : VF3.team2;
+            HF1.team1 = winnerVF3;
+        } else {
+            HF1.team1 = 'Sieger VF3';
+        }
+        if (VF1 && VF1.status === 'completed') {
+            const winnerVF1 = VF1.score1 > VF1.score2 ? VF1.team1 : VF1.team2;
+            HF1.team2 = winnerVF1;
+        } else {
+            HF1.team2 = 'Sieger VF1';
+        }
+        if (HF1.status !== 'completed') HF1.status = 'geplant';
+        await HF1.save();
+    }
+    if (HF2) {
+        if (VF4 && VF4.status === 'completed') {
+            const winnerVF4 = VF4.score1 > VF4.score2 ? VF4.team1 : VF4.team2;
+            HF2.team1 = winnerVF4;
+        } else {
+            HF2.team1 = 'Sieger VF4';
+        }
+        if (VF2 && VF2.status === 'completed') {
+            const winnerVF2 = VF2.score1 > VF2.score2 ? VF2.team1 : VF2.team2;
+            HF2.team2 = winnerVF2;
+        } else {
+            HF2.team2 = 'Sieger VF2';
+        }
+        if (HF2.status !== 'completed') HF2.status = 'geplant';
+        await HF2.save();
+    }
+    // Halbfinale → Finale
+    const F1 = matches.find(m => m.id === 'F1');
+    if (F1) {
+        if (HF1 && HF1.status === 'completed') {
+            const winnerHF1 = HF1.score1 > HF1.score2 ? HF1.team1 : HF1.team2;
+            F1.team1 = winnerHF1;
+        } else {
+            F1.team1 = 'Sieger HF1';
+        }
+        if (HF2 && HF2.status === 'completed') {
+            const winnerHF2 = HF2.score1 > HF2.score2 ? HF2.team1 : HF2.team2;
+            F1.team2 = winnerHF2;
+        } else {
+            F1.team2 = 'Sieger HF2';
+        }
+        if (F1.status !== 'completed') F1.status = 'geplant';
+        await F1.save();
+    }
+}
+// ... bestehender Code ...

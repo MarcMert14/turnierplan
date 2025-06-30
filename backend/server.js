@@ -11,7 +11,10 @@ const mongoose = require('mongoose');
 const app = express();
 const PORT = 3001;
 
-app.use(cors());
+app.use(cors({
+    origin: 'https://turnierplan-frontend.onrender.com',
+    credentials: true
+}));
 app.use(bodyParser.json());
 
 const DATA_DIR = path.join(__dirname, 'data');

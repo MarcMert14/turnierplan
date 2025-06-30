@@ -1172,18 +1172,33 @@ app.put('/api/matches/:id/time', requireAuth, async (req, res) => {
         if (match.phase === 'pause' && pauseDuration) {
             match.pauseDuration = pauseDuration;
             // Endzeit berechnen
-            let [h, m] = time.split(':').map(Number);
-            let start = new Date(2025, 6, 5, h, m, 0);
-            let end = new Date(start.getTime() + pauseDuration * 60 * 1000);
+            const [h, m] = time.split(':').map(Number);
+            const start = new Date(2025, 6, 5, h, m, 0);
+            const end = new Date(start.getTime() + pauseDuration * 60 * 1000);
             match.endTime = `${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
         } else {
             // Endzeit für normales Spiel
-            let [h, m] = time.split(':').map(Number);
-            let start = new Date(2025, 6, 5, h, m, 0);
-            let end = new Date(start.getTime() + 8 * 60 * 1000); // 8 Minuten Spielzeit (TODO: dynamisch)
+            const [h, m] = time.split(':').map(Number);
+            const start = new Date(2025, 6, 5, h, m, 0);
+            const end = new Date(start.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
             match.endTime = `${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
         }
         await match.save();
+
+        // === NEU: Spielplan ab diesem Spiel fortlaufend neu berechnen ===
+        // Alle Matches laden und in vorrunde/ko gruppieren
+        const allMatches = await Match.find();
+        const matchesObj = {
+            vorrunde: allMatches.filter(m => m.phase === 'vorrunde'),
+            ko: allMatches.filter(m => m.phase !== 'vorrunde')
+        };
+        // Spielplan neu berechnen ab diesem Spiel
+        const updated = await recalculateMatchTimes(matchesObj, id);
+        // Änderungen in der DB speichern
+        for (const m of [...updated.vorrunde, ...updated.ko]) {
+            await Match.updateOne({ id: m.id }, { $set: { startTime: m.startTime, endTime: m.endTime, pauseDuration: m.pauseDuration } });
+        }
+
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ message: 'Fehler beim Speichern', error: error.message });
@@ -1588,6 +1603,83 @@ async function updateKOMatchesMongo() {
     }
     // 9 Teams: Gruppenplatzierungen setzen (analog, falls benötigt)
     // ... ggf. weitere Logik für 9 Teams ...
+    // 9 Teams: KO-Logik mit Viertelfinale
+    if (teams.length === 9 && typeof standings === 'object' && !Array.isArray(standings)) {
+        // Gruppen extrahieren
+        const gruppeA = standings['A'] || [];
+        const gruppeB = standings['B'] || [];
+        const gruppeC = standings['C'] || [];
+        // 1. und 2. jeder Gruppe
+        let viertelfinalisten = [];
+        if (gruppeA[0]) viertelfinalisten.push({ ...gruppeA[0], gruppe: 'A', platz: 1 });
+        if (gruppeA[1]) viertelfinalisten.push({ ...gruppeA[1], gruppe: 'A', platz: 2 });
+        if (gruppeB[0]) viertelfinalisten.push({ ...gruppeB[0], gruppe: 'B', platz: 1 });
+        if (gruppeB[1]) viertelfinalisten.push({ ...gruppeB[1], gruppe: 'B', platz: 2 });
+        if (gruppeC[0]) viertelfinalisten.push({ ...gruppeC[0], gruppe: 'C', platz: 1 });
+        if (gruppeC[1]) viertelfinalisten.push({ ...gruppeC[1], gruppe: 'C', platz: 2 });
+        // Alle Gruppendritten sammeln und sortieren
+        let dritte = [];
+        if (gruppeA[2]) dritte.push({ ...gruppeA[2], gruppe: 'A', platz: 3 });
+        if (gruppeB[2]) dritte.push({ ...gruppeB[2], gruppe: 'B', platz: 3 });
+        if (gruppeC[2]) dritte.push({ ...gruppeC[2], gruppe: 'C', platz: 3 });
+        dritte.sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            const diffA = a.goalsFor - a.goalsAgainst;
+            const diffB = b.goalsFor - b.goalsAgainst;
+            if (diffB !== diffA) return diffB - diffA;
+            if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+            return a.name.localeCompare(b.name);
+        });
+        // Die 2 besten Gruppendritten
+        if (dritte[0]) viertelfinalisten.push(dritte[0]);
+        if (dritte[1]) viertelfinalisten.push(dritte[1]);
+        // Jetzt 8 Teams für das Viertelfinale
+        // UEFA-Schema: 1A-2B, 1B-2C, 1C-bester Dritter, 2A-zweitbester Dritter
+        // Die besten Dritten werden so verteilt, dass keine Gruppe ein internes Duell hat
+        // (vereinfachte Variante, ggf. nachbessern)
+        const best3 = dritte[0];
+        const second3 = dritte[1];
+        // Zuordnung der besten Dritten zu VF3/VF4
+        let vf3_team2 = best3?.name || 'Bester Dritter';
+        let vf4_team2 = second3?.name || 'Zweitbester Dritter';
+        // Falls best3 aus Gruppe C ist, dann 1C vs best3 vermeiden (dann 1C vs second3, 2A vs best3)
+        if (best3 && best3.gruppe === 'C' && second3) {
+            vf3_team2 = second3.name;
+            vf4_team2 = best3.name;
+        }
+        const koMatches = matches.filter(m => m.phase === 'ko');
+        for (const match of koMatches) {
+            if (match.id === 'VF1') {
+                match.team1 = gruppeA[0]?.name || '1. Gruppe A';
+                match.team2 = gruppeB[1]?.name || '2. Gruppe B';
+            }
+            if (match.id === 'VF2') {
+                match.team1 = gruppeB[0]?.name || '1. Gruppe B';
+                match.team2 = gruppeC[1]?.name || '2. Gruppe C';
+            }
+            if (match.id === 'VF3') {
+                match.team1 = gruppeC[0]?.name || '1. Gruppe C';
+                match.team2 = vf3_team2;
+            }
+            if (match.id === 'VF4') {
+                match.team1 = gruppeA[1]?.name || '2. Gruppe A';
+                match.team2 = vf4_team2;
+            }
+            if (match.id === 'HF1') {
+                match.team1 = 'Sieger VF1';
+                match.team2 = 'Sieger VF3';
+            }
+            if (match.id === 'HF2') {
+                match.team1 = 'Sieger VF2';
+                match.team2 = 'Sieger VF4';
+            }
+            if (match.id === 'F1') {
+                match.team1 = 'Sieger HF1';
+                match.team2 = 'Sieger HF2';
+            }
+            await match.save();
+        }
+    }
 }
 
 async function advanceKOMatchesMongo() {

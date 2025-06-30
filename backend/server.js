@@ -316,37 +316,46 @@ async function generateMatches(teams) {
             pauseDuration: 20
         });
         currentTime = new Date(pauseEnd);
-        // Halbfinale 1
-        let hf1Start = new Date(currentTime);
-        let hf1End = new Date(hf1Start.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
-        matches.ko.push({
-            id: 'HF1', phase: 'ko', round: 'Halbfinale 1',
-            team1: '1. Gruppe A', team2: '2. Gruppe B',
-            score1: null, score2: null, status: 'wartend',
-            startTime: `${hf1Start.getHours().toString().padStart(2, '0')}:${hf1Start.getMinutes().toString().padStart(2, '0')}`,
-            endTime: `${hf1End.getHours().toString().padStart(2, '0')}:${hf1End.getMinutes().toString().padStart(2, '0')}`
-        });
-        currentTime = new Date(hf1End.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
-        // Halbfinale 2
-        let hf2Start = new Date(currentTime);
-        let hf2End = new Date(hf2Start.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
-        matches.ko.push({
-            id: 'HF2', phase: 'ko', round: 'Halbfinale 2',
-            team1: '1. Gruppe B', team2: '2. Gruppe A',
-            score1: null, score2: null, status: 'wartend',
-            startTime: `${hf2Start.getHours().toString().padStart(2, '0')}:${hf2Start.getMinutes().toString().padStart(2, '0')}`,
-            endTime: `${hf2End.getHours().toString().padStart(2, '0')}:${hf2End.getMinutes().toString().padStart(2, '0')}`
-        });
-        currentTime = new Date(hf2End.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
-        // Finale
-        let f1Start = new Date(currentTime);
-        let f1End = new Date(f1Start.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
-        matches.ko.push({
-            id: 'F1', phase: 'ko', round: 'Finale',
-            team1: 'Sieger HF1', team2: 'Sieger HF2',
-            score1: null, score2: null, status: 'wartend',
-            startTime: `${f1Start.getHours().toString().padStart(2, '0')}:${f1End.getMinutes().toString().padStart(2, '0')}`,
-            endTime: `${f1End.getHours().toString().padStart(2, '0')}:${f1End.getMinutes().toString().padStart(2, '0')}`
+        // KO-Spiele: Viertelfinale (VF1–VF4), Halbfinale (HF1, HF2), Finale (F1)
+        const koMatches = [
+            { id: 'VF1', round: 'Viertelfinale 1', team1: '1. Gruppe A', team2: '2. Gruppe B' },
+            { id: 'VF2', round: 'Viertelfinale 2', team1: '1. Gruppe B', team2: '2. Gruppe C' },
+            { id: 'VF3', round: 'Viertelfinale 3', team1: '1. Gruppe C', team2: 'Bester Dritter' },
+            { id: 'VF4', round: 'Viertelfinale 4', team1: '2. Gruppe A', team2: 'Zweitbester Dritter' },
+            { id: 'HF1', round: 'Halbfinale 1', team1: 'Sieger VF1', team2: 'Sieger VF3' },
+            { id: 'HF2', round: 'Halbfinale 2', team1: 'Sieger VF2', team2: 'Sieger VF4' },
+            { id: 'F1', round: 'Finale', team1: 'Sieger HF1', team2: 'Sieger HF2' }
+        ];
+        koMatches.forEach((match, idx) => {
+            const matchStart = new Date(currentTime.getTime() + idx * 12 * 60 * 1000);
+            const matchEnd = new Date(matchStart.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
+            matches.ko.push({
+                id: match.id,
+                phase: 'ko',
+                round: match.round,
+                team1: match.team1,
+                team2: match.team2,
+                score1: null,
+                score2: null,
+                status: 'wartend',
+                startTime: `${matchStart.getHours().toString().padStart(2, '0')}:${matchStart.getMinutes().toString().padStart(2, '0')}`,
+                endTime: `${matchEnd.getHours().toString().padStart(2, '0')}:${matchEnd.getMinutes().toString().padStart(2, '0')}`
+            });
+            // Nach jedem KO-Spiel: PAUSENZEIT_MINUTEN Minuten Pause (außer nach VF4 und HF2)
+            if (match.id === 'VF4' || match.id === 'HF2') {
+                // Nach VF4/HF2: 10 Minuten Pause
+                const pauseStart = new Date(matchEnd.getTime());
+                const pauseEnd = new Date(pauseStart.getTime() + 10 * 60 * 1000);
+                matches.ko.push({
+                    id: `pause_${match.id}`, phase: 'pause', round: '10 Minuten Pause', team1: '', team2: '', status: 'pause',
+                    startTime: `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`,
+                    endTime: `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`,
+                    pauseDuration: 10
+                });
+                currentTime = new Date(pauseEnd);
+            } else {
+                currentTime = new Date(matchEnd.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
+            }
         });
         return matches;
     }
@@ -411,7 +420,7 @@ async function generateMatches(teams) {
             id: 'HF1', phase: 'ko', round: 'Halbfinale 1',
             team1: '1. Gruppe A', team2: '2. Gruppe B',
             score1: null, score2: null, status: 'wartend',
-            startTime: `${hf1Start.getHours().toString().padStart(2, '0')}:${hf1End.getMinutes().toString().padStart(2, '0')}`,
+            startTime: `${hf1Start.getHours().toString().padStart(2, '0')}:${hf1Start.getMinutes().toString().padStart(2, '0')}`,
             endTime: `${hf1End.getHours().toString().padStart(2, '0')}:${hf1End.getMinutes().toString().padStart(2, '0')}`
         });
         currentTime = new Date(hf1End.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
@@ -422,7 +431,7 @@ async function generateMatches(teams) {
             id: 'HF2', phase: 'ko', round: 'Halbfinale 2',
             team1: '1. Gruppe B', team2: '2. Gruppe A',
             score1: null, score2: null, status: 'wartend',
-            startTime: `${hf2Start.getHours().toString().padStart(2, '0')}:${hf2End.getMinutes().toString().padStart(2, '0')}`,
+            startTime: `${hf2Start.getHours().toString().padStart(2, '0')}:${hf2Start.getMinutes().toString().padStart(2, '0')}`,
             endTime: `${hf2End.getHours().toString().padStart(2, '0')}:${hf2End.getMinutes().toString().padStart(2, '0')}`
         });
         currentTime = new Date(hf2End.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
@@ -980,11 +989,16 @@ app.post('/api/settings/spielzeit', requireAuth, async (req, res) => {
     await saveSettings({ spielzeit });
     resetTimer();
     await saveTimerState();
-    // Spielplan neu generieren (Teams bleiben erhalten)
-    const teams = await fs.readJson(TEAMS_JSON).catch(() => []);
-    let matches = await generateMatches(teams);
-    matches = await recalculateMatchTimes(matches);
-    await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+    // === NEU: Spielplan neu berechnen und in MongoDB speichern ===
+    const allMatches = await Match.find();
+    const matchesObj = {
+        vorrunde: allMatches.filter(m => m.phase === 'vorrunde'),
+        ko: allMatches.filter(m => m.phase !== 'vorrunde')
+    };
+    const updated = await recalculateMatchTimes(matchesObj);
+    for (const m of [...updated.vorrunde, ...updated.ko]) {
+        await Match.updateOne({ id: m.id }, { $set: { startTime: m.startTime, endTime: m.endTime, pauseDuration: m.pauseDuration } });
+    }
     res.json({ success: true });
 });
 
@@ -1002,11 +1016,16 @@ app.post('/api/settings/pausenzeit', requireAuth, async (req, res) => {
     }
     PAUSENZEIT_MINUTEN = pausenzeit;
     await saveSettings({ pausenzeit });
-    // Spielplan neu generieren (Teams bleiben erhalten)
-    const teams = await fs.readJson(TEAMS_JSON).catch(() => []);
-    let matches = await generateMatches(teams);
-    matches = await recalculateMatchTimes(matches);
-    await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+    // === NEU: Spielplan neu berechnen und in MongoDB speichern ===
+    const allMatches = await Match.find();
+    const matchesObj = {
+        vorrunde: allMatches.filter(m => m.phase === 'vorrunde'),
+        ko: allMatches.filter(m => m.phase !== 'vorrunde')
+    };
+    const updated = await recalculateMatchTimes(matchesObj);
+    for (const m of [...updated.vorrunde, ...updated.ko]) {
+        await Match.updateOne({ id: m.id }, { $set: { startTime: m.startTime, endTime: m.endTime, pauseDuration: m.pauseDuration } });
+    }
     res.json({ success: true });
 });
 

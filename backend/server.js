@@ -291,8 +291,6 @@ async function generateMatches(teams) {
         // Debug-Ausgabe
         console.log('Vorrunden-Spiele (ABCABCABC):', vorrundenSpiele.map(s => s.gruppe + ': ' + s.team1 + ' vs ' + s.team2));
         vorrundenSpiele.forEach((spiel, idx) => {
-            const matchStart = new Date(currentTime.getTime() + idx * 12 * 60 * 1000);
-            const matchEnd = new Date(matchStart.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
             matches.vorrunde.push({
                 id: `g${spiel.gruppe}_${spiel.team1}_vs_${spiel.team2}`,
                 phase: 'vorrunde',
@@ -302,20 +300,17 @@ async function generateMatches(teams) {
                 score1: null,
                 score2: null,
                 status: 'geplant',
-                startTime: `${matchStart.getHours().toString().padStart(2, '0')}:${matchStart.getMinutes().toString().padStart(2, '0')}`,
-                endTime: `${matchEnd.getHours().toString().padStart(2, '0')}:${matchEnd.getMinutes().toString().padStart(2, '0')}`
+                startTime: null,
+                endTime: null
             });
         });
         // Nach Vorrunde: 20 Minuten Pause
-        let pauseStart = new Date(currentTime.getTime() + vorrundenSpiele.length * 12 * 60 * 1000);
-        let pauseEnd = new Date(pauseStart.getTime() + 20 * 60 * 1000);
         matches.ko.push({
             id: 'pause1', phase: 'pause', round: '20 Minuten Pause', team1: '', team2: '', status: 'pause',
-            startTime: `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`,
-            endTime: `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`,
+            startTime: null,
+            endTime: null,
             pauseDuration: 20
         });
-        currentTime = new Date(pauseEnd);
         // KO-Spiele: Viertelfinale (VF1–VF4), Halbfinale (HF1, HF2), Finale (F1)
         const koMatches = [
             { id: 'VF1', round: 'Viertelfinale 1', team1: '1. Gruppe A', team2: '2. Gruppe B' },
@@ -326,9 +321,7 @@ async function generateMatches(teams) {
             { id: 'HF2', round: 'Halbfinale 2', team1: 'Sieger VF2', team2: 'Sieger VF4' },
             { id: 'F1', round: 'Finale', team1: 'Sieger HF1', team2: 'Sieger HF2' }
         ];
-        koMatches.forEach((match, idx) => {
-            const matchStart = new Date(currentTime.getTime() + idx * 12 * 60 * 1000);
-            const matchEnd = new Date(matchStart.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
+        koMatches.forEach((match) => {
             matches.ko.push({
                 id: match.id,
                 phase: 'ko',
@@ -338,24 +331,9 @@ async function generateMatches(teams) {
                 score1: null,
                 score2: null,
                 status: 'wartend',
-                startTime: `${matchStart.getHours().toString().padStart(2, '0')}:${matchStart.getMinutes().toString().padStart(2, '0')}`,
-                endTime: `${matchEnd.getHours().toString().padStart(2, '0')}:${matchEnd.getMinutes().toString().padStart(2, '0')}`
+                startTime: null,
+                endTime: null
             });
-            // Nach jedem KO-Spiel: PAUSENZEIT_MINUTEN Minuten Pause (außer nach VF4 und HF2)
-            if (match.id === 'VF4' || match.id === 'HF2') {
-                // Nach VF4/HF2: 10 Minuten Pause
-                const pauseStart = new Date(matchEnd.getTime());
-                const pauseEnd = new Date(pauseStart.getTime() + 10 * 60 * 1000);
-                matches.ko.push({
-                    id: `pause_${match.id}`, phase: 'pause', round: '10 Minuten Pause', team1: '', team2: '', status: 'pause',
-                    startTime: `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`,
-                    endTime: `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`,
-                    pauseDuration: 10
-                });
-                currentTime = new Date(pauseEnd);
-            } else {
-                currentTime = new Date(matchEnd.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
-            }
         });
         return matches;
     }
@@ -1055,8 +1033,22 @@ app.get('/api/matches', async (req, res) => {
 // API: Standings abrufen (jetzt gruppenbasiert für 8/9 Teams)
 app.get('/api/standings', async (req, res) => {
     try {
-        const standings = await Standing.find();
-        res.json(standings);
+        const teams = await Team.find();
+        const standingsArr = await Standing.find();
+        // Gruppierte Standings für 8/9 Teams
+        if (teams.length === 8 || teams.length === 9) {
+            let standings = {};
+            standingsArr.forEach(s => {
+                if (s.gruppe) {
+                    if (!standings[s.gruppe]) standings[s.gruppe] = [];
+                    standings[s.gruppe].push(s);
+                }
+            });
+            res.json(standings);
+        } else {
+            // Für 10 Teams: Einzel-Tabelle (Array)
+            res.json(standingsArr);
+        }
     } catch (error) {
         res.status(500).json({ error: 'Fehler beim Laden der Tabelle' });
     }

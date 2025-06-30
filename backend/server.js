@@ -842,56 +842,53 @@ async function saveSettings(newSettings) {
 // Hilfsfunktion: Spielplan fortlaufend neu berechnen (Startzeiten, Endzeiten, Pausen)
 async function recalculateMatchTimes(matches, startFromMatchId = null) {
     let allMatches = [...matches.vorrunde, ...matches.ko];
-    if (!startFromMatchId) {
-        // Startzeit immer 14:00 für das erste Spiel
-        let currentTime = new Date('2025-07-05T14:00:00');
-        for (let i = 0; i < allMatches.length; i++) {
-            let m = allMatches[i];
-            // Pause nach Vorrunde/letztem Gruppenspiel
-            if (m.phase === 'pause' && (m.id === 'pause1')) {
-                let pauseLen = 20;
-                const pauseStart = new Date(currentTime);
-                const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
-                m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
-                m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
-                currentTime = new Date(pauseEnd.getTime());
-                continue;
-            }
-            // Pause vor Finale (immer 10 Minuten)
-            if (m.phase === 'pause' && (m.id === 'pause2' || m.id === 'pause3')) {
-                let pauseLen = 10;
-                const pauseStart = new Date(currentTime);
-                const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
-                m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
-                m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
-                currentTime = new Date(pauseEnd.getTime());
-                continue;
-            }
-            // Normale Pause
-            if (m.phase === 'pause') {
-                let pauseLen = PAUSENZEIT_MINUTEN;
-                const pauseStart = new Date(currentTime);
-                const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
-                m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
-                m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
-                currentTime = new Date(pauseEnd.getTime());
-                continue;
-            }
-            // Spiel
-            m.startTime = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`;
-            const matchEnd = new Date(currentTime.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
-            m.endTime = `${matchEnd.getHours().toString().padStart(2, '0')}:${matchEnd.getMinutes().toString().padStart(2, '0')}`;
-            currentTime = new Date(matchEnd.getTime());
-            // Nach jedem Spiel: Pause, außer nach dem letzten
-            const next = allMatches[i + 1];
-            if (next && next.phase === 'pause' && (next.id === 'pause1' || next.id === 'pause2' || next.id === 'pause3')) {
-                continue;
-            }
-            if (i === allMatches.length - 1) break;
-            currentTime = new Date(currentTime.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
+    // Immer ALLE Zeiten neu berechnen, unabhängig von vorhandenen Werten
+    let currentTime = new Date('2025-07-05T14:00:00');
+    for (let i = 0; i < allMatches.length; i++) {
+        let m = allMatches[i];
+        // Pause nach Vorrunde/letztem Gruppenspiel
+        if (m.phase === 'pause' && (m.id === 'pause1')) {
+            let pauseLen = 20;
+            const pauseStart = new Date(currentTime);
+            const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
+            m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
+            m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
+            currentTime = new Date(pauseEnd.getTime());
+            continue;
         }
+        // Pause vor Finale (immer 10 Minuten)
+        if (m.phase === 'pause' && (m.id === 'pause2' || m.id === 'pause3')) {
+            let pauseLen = 10;
+            const pauseStart = new Date(currentTime);
+            const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
+            m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
+            m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
+            currentTime = new Date(pauseEnd.getTime());
+            continue;
+        }
+        // Normale Pause
+        if (m.phase === 'pause') {
+            let pauseLen = PAUSENZEIT_MINUTEN;
+            const pauseStart = new Date(currentTime);
+            const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
+            m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
+            m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
+            currentTime = new Date(pauseEnd.getTime());
+            continue;
+        }
+        // Spiel
+        m.startTime = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`;
+        const matchEnd = new Date(currentTime.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
+        m.endTime = `${matchEnd.getHours().toString().padStart(2, '0')}:${matchEnd.getMinutes().toString().padStart(2, '0')}`;
+        currentTime = new Date(matchEnd.getTime());
+        // Nach jedem Spiel: Pause, außer nach dem letzten
+        const next = allMatches[i + 1];
+        if (next && next.phase === 'pause' && (next.id === 'pause1' || next.id === 'pause2' || next.id === 'pause3')) {
+            continue;
+        }
+        if (i === allMatches.length - 1) break;
+        currentTime = new Date(currentTime.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
     }
-    // ... bestehender Code ...
     matches.vorrunde = allMatches.filter(m => m.phase === 'vorrunde');
     matches.ko = allMatches.filter(m => m.phase !== 'vorrunde');
     return matches;
@@ -1450,22 +1447,18 @@ async function recalculateStandingsMongo() {
     const teams = await Team.find();
     // Standings neu berechnen
     let standings = teams.map(t => ({ name: t.name, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 }));
-    // Gruppenzuordnung robust anhand der Vorrundenspiele
-    if (matches && matches.length > 0) {
-        const gruppenMap = {};
-        (matches.filter(m => m.phase === 'vorrunde')).forEach(m => {
-            if (m.round && m.round.match(/Gruppe ([A-Z])/)) {
-                const gruppe = m.round.match(/Gruppe ([A-Z])/)[1];
-                [m.team1, m.team2].forEach(teamName => {
-                    gruppenMap[teamName] = gruppe;
-                });
-            }
+    // Gruppenzuordnung für jedes Team anhand der Gruppenspiele (phase: 'vorrunde', round: 'Gruppe X')
+    const gruppenMap = {};
+    matches.filter(m => m.phase === 'vorrunde' && m.round && m.round.match(/Gruppe ([A-Z])/)).forEach(m => {
+        const gruppe = m.round.match(/Gruppe ([A-Z])/)[1];
+        [m.team1, m.team2].forEach(teamName => {
+            gruppenMap[teamName] = gruppe;
         });
-        standings.forEach(s => {
-            if (gruppenMap[s.name]) s.gruppe = gruppenMap[s.name];
-        });
-    }
-    // Nur Vorrunden-/Gruppenspiele zählen!
+    });
+    standings.forEach(s => {
+        if (gruppenMap[s.name]) s.gruppe = gruppenMap[s.name];
+    });
+    // Nur Gruppenspiele zählen!
     matches.filter(m => m.phase === 'vorrunde').forEach(match => {
         if (typeof match.score1 === 'number' && typeof match.score2 === 'number' && match.score1 !== null && match.score2 !== null) {
             let t1 = standings.find(t => t.name === match.team1);
@@ -1485,258 +1478,57 @@ async function recalculateStandingsMongo() {
     await Standing.insertMany(standings);
 }
 
-async function updateKOMatchesMongo() {
-    // Alle relevanten Daten laden
-    const matches = await Match.find();
-    const standingsArr = await Standing.find();
-    const teams = await Team.find();
-    // Gruppierte Standings für 8/9 Teams
-    let standings = {};
-    if (teams.length === 8 || teams.length === 9) {
-        // Gruppieren nach Gruppe, falls vorhanden
-        standingsArr.forEach(s => {
-            if (s.gruppe) {
-                if (!standings[s.gruppe]) standings[s.gruppe] = [];
-                standings[s.gruppe].push(s);
-            }
-        });
-    } else {
-        standings = standingsArr;
-    }
-    // 10 Teams: Platzierungen sortieren
-    if (teams.length === 10) {
-        const sorted = [...standingsArr].sort((a, b) => {
-            if (b.points !== a.points) return b.points - a.points;
-            const diffA = a.goalsFor - a.goalsAgainst;
-            const diffB = b.goalsFor - b.goalsAgainst;
-            if (diffB !== diffA) return diffB - diffA;
-            if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-            return a.name.localeCompare(b.name);
-        });
-        // KO-Spiele setzen (exakt nach Turnierlogik)
-        const koMatches = matches.filter(m => m.phase === 'ko');
-        for (const match of koMatches) {
-            if (match.id === 'AF1') {
-                match.team1 = sorted[6]?.name || 'Platz 7'; // Platz 7
-                match.team2 = sorted[9]?.name || 'Platz 10'; // Platz 10
-            }
-            if (match.id === 'AF2') {
-                match.team1 = sorted[7]?.name || 'Platz 8'; // Platz 8
-                match.team2 = sorted[8]?.name || 'Platz 9'; // Platz 9
-            }
-            if (match.id === 'VF1') {
-                match.team1 = sorted[2]?.name || 'Platz 3'; // Platz 3
-                match.team2 = sorted[5]?.name || 'Platz 6'; // Platz 6
-            }
-            if (match.id === 'VF2') {
-                match.team1 = sorted[3]?.name || 'Platz 4'; // Platz 4
-                match.team2 = sorted[4]?.name || 'Platz 5'; // Platz 5
-            }
-            if (match.id === 'VF3') {
-                match.team1 = sorted[1]?.name || 'Platz 2'; // Platz 2
-                match.team2 = 'Sieger AF1';
-            }
-            if (match.id === 'VF4') {
-                match.team1 = sorted[0]?.name || 'Platz 1'; // Platz 1
-                match.team2 = 'Sieger AF2';
-            }
-            if (match.id === 'HF1') {
-                // team1 wird durch Sieger VF3 ersetzt
-                // team2 wird durch Sieger VF1 ersetzt
-            }
-            if (match.id === 'HF2') {
-                // team1 wird durch Sieger VF4 ersetzt
-                // team2 wird durch Sieger VF2 ersetzt
-            }
-            if (match.id === 'F1') {
-                match.team1 = 'Sieger HF1';
-                match.team2 = 'Sieger HF2';
-            }
-            await match.save();
+async function recalculateMatchTimes(matches, startFromMatchId = null) {
+    let allMatches = [...matches.vorrunde, ...matches.ko];
+    // Immer ALLE Zeiten neu berechnen, unabhängig von vorhandenen Werten
+    let currentTime = new Date('2025-07-05T14:00:00');
+    for (let i = 0; i < allMatches.length; i++) {
+        let m = allMatches[i];
+        // Pause nach Vorrunde/letztem Gruppenspiel
+        if (m.phase === 'pause' && (m.id === 'pause1')) {
+            let pauseLen = 20;
+            const pauseStart = new Date(currentTime);
+            const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
+            m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
+            m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
+            currentTime = new Date(pauseEnd.getTime());
+            continue;
         }
-    }
-    // 8 Teams: Gruppenplatzierungen setzen
-    if (teams.length === 8 && typeof standings === 'object' && !Array.isArray(standings)) {
-        const gruppeA = standings['A'] || [];
-        const gruppeB = standings['B'] || [];
-        const koMatches = matches.filter(m => m.phase === 'ko');
-        for (const match of koMatches) {
-            if (match.id === 'HF1') {
-                match.team1 = gruppeA[0]?.name || '1. Gruppe A';
-                match.team2 = gruppeB[1]?.name || '2. Gruppe B';
-            }
-            if (match.id === 'HF2') {
-                match.team1 = gruppeB[0]?.name || '1. Gruppe B';
-                match.team2 = gruppeA[1]?.name || '2. Gruppe A';
-            }
-            if (match.id === 'F1') {
-                match.team1 = 'Sieger HF1';
-                match.team2 = 'Sieger HF2';
-            }
-            await match.save();
+        // Pause vor Finale (immer 10 Minuten)
+        if (m.phase === 'pause' && (m.id === 'pause2' || m.id === 'pause3')) {
+            let pauseLen = 10;
+            const pauseStart = new Date(currentTime);
+            const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
+            m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
+            m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
+            currentTime = new Date(pauseEnd.getTime());
+            continue;
         }
-    }
-    // 9 Teams: Gruppenplatzierungen setzen (analog, falls benötigt)
-    // ... ggf. weitere Logik für 9 Teams ...
-    // 9 Teams: KO-Logik mit Viertelfinale
-    if (teams.length === 9 && typeof standings === 'object' && !Array.isArray(standings)) {
-        // Gruppen extrahieren
-        const gruppeA = standings['A'] || [];
-        const gruppeB = standings['B'] || [];
-        const gruppeC = standings['C'] || [];
-        // 1. und 2. jeder Gruppe
-        let viertelfinalisten = [];
-        if (gruppeA[0]) viertelfinalisten.push({ ...gruppeA[0], gruppe: 'A', platz: 1 });
-        if (gruppeA[1]) viertelfinalisten.push({ ...gruppeA[1], gruppe: 'A', platz: 2 });
-        if (gruppeB[0]) viertelfinalisten.push({ ...gruppeB[0], gruppe: 'B', platz: 1 });
-        if (gruppeB[1]) viertelfinalisten.push({ ...gruppeB[1], gruppe: 'B', platz: 2 });
-        if (gruppeC[0]) viertelfinalisten.push({ ...gruppeC[0], gruppe: 'C', platz: 1 });
-        if (gruppeC[1]) viertelfinalisten.push({ ...gruppeC[1], gruppe: 'C', platz: 2 });
-        // Alle Gruppendritten sammeln und sortieren
-        let dritte = [];
-        if (gruppeA[2]) dritte.push({ ...gruppeA[2], gruppe: 'A', platz: 3 });
-        if (gruppeB[2]) dritte.push({ ...gruppeB[2], gruppe: 'B', platz: 3 });
-        if (gruppeC[2]) dritte.push({ ...gruppeC[2], gruppe: 'C', platz: 3 });
-        dritte.sort((a, b) => {
-            if (b.points !== a.points) return b.points - a.points;
-            const diffA = a.goalsFor - a.goalsAgainst;
-            const diffB = b.goalsFor - b.goalsAgainst;
-            if (diffB !== diffA) return diffB - diffA;
-            if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-            return a.name.localeCompare(b.name);
-        });
-        // Die 2 besten Gruppendritten
-        if (dritte[0]) viertelfinalisten.push(dritte[0]);
-        if (dritte[1]) viertelfinalisten.push(dritte[1]);
-        // Jetzt 8 Teams für das Viertelfinale
-        // UEFA-Schema: 1A-2B, 1B-2C, 1C-bester Dritter, 2A-zweitbester Dritter
-        // Die besten Dritten werden so verteilt, dass keine Gruppe ein internes Duell hat
-        // (vereinfachte Variante, ggf. nachbessern)
-        const best3 = dritte[0];
-        const second3 = dritte[1];
-        // Zuordnung der besten Dritten zu VF3/VF4
-        let vf3_team2 = best3?.name || 'Bester Dritter';
-        let vf4_team2 = second3?.name || 'Zweitbester Dritter';
-        // Falls best3 aus Gruppe C ist, dann 1C vs best3 vermeiden (dann 1C vs second3, 2A vs best3)
-        if (best3 && best3.gruppe === 'C' && second3) {
-            vf3_team2 = second3.name;
-            vf4_team2 = best3.name;
+        // Normale Pause
+        if (m.phase === 'pause') {
+            let pauseLen = PAUSENZEIT_MINUTEN;
+            const pauseStart = new Date(currentTime);
+            const pauseEnd = new Date(pauseStart.getTime() + pauseLen * 60 * 1000);
+            m.startTime = `${pauseStart.getHours().toString().padStart(2, '0')}:${pauseStart.getMinutes().toString().padStart(2, '0')}`;
+            m.endTime = `${pauseEnd.getHours().toString().padStart(2, '0')}:${pauseEnd.getMinutes().toString().padStart(2, '0')}`;
+            currentTime = new Date(pauseEnd.getTime());
+            continue;
         }
-        const koMatches = matches.filter(m => m.phase === 'ko');
-        for (const match of koMatches) {
-            if (match.id === 'VF1') {
-                match.team1 = gruppeA[0]?.name || '1. Gruppe A';
-                match.team2 = gruppeB[1]?.name || '2. Gruppe B';
-            }
-            if (match.id === 'VF2') {
-                match.team1 = gruppeB[0]?.name || '1. Gruppe B';
-                match.team2 = gruppeC[1]?.name || '2. Gruppe C';
-            }
-            if (match.id === 'VF3') {
-                match.team1 = gruppeC[0]?.name || '1. Gruppe C';
-                match.team2 = vf3_team2;
-            }
-            if (match.id === 'VF4') {
-                match.team1 = gruppeA[1]?.name || '2. Gruppe A';
-                match.team2 = vf4_team2;
-            }
-            if (match.id === 'HF1') {
-                match.team1 = 'Sieger VF1';
-                match.team2 = 'Sieger VF3';
-            }
-            if (match.id === 'HF2') {
-                match.team1 = 'Sieger VF2';
-                match.team2 = 'Sieger VF4';
-            }
-            if (match.id === 'F1') {
-                match.team1 = 'Sieger HF1';
-                match.team2 = 'Sieger HF2';
-            }
-            await match.save();
+        // Spiel (egal ob Gruppenspiel oder KO)
+        m.startTime = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`;
+        const matchEnd = new Date(currentTime.getTime() + SPIELZEIT_MINUTEN * 60 * 1000);
+        m.endTime = `${matchEnd.getHours().toString().padStart(2, '0')}:${matchEnd.getMinutes().toString().padStart(2, '0')}`;
+        currentTime = new Date(matchEnd.getTime());
+        // Nach jedem Spiel: Pause, außer nach dem letzten
+        const next = allMatches[i + 1];
+        if (next && next.phase === 'pause' && (next.id === 'pause1' || next.id === 'pause2' || next.id === 'pause3')) {
+            continue;
         }
+        if (i === allMatches.length - 1) break;
+        currentTime = new Date(currentTime.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
     }
+    matches.vorrunde = allMatches.filter(m => m.phase === 'vorrunde');
+    matches.ko = allMatches.filter(m => m.phase !== 'vorrunde');
+    return matches;
 }
-
-async function advanceKOMatchesMongo() {
-    // Alle Matches laden
-    const matches = await Match.find();
-    // Achtelfinale → Viertelfinale, Viertelfinale → Halbfinale, Halbfinale → Finale
-    const AF1 = matches.find(m => m.id === 'AF1');
-    const AF2 = matches.find(m => m.id === 'AF2');
-    const VF3 = matches.find(m => m.id === 'VF3');
-    const VF4 = matches.find(m => m.id === 'VF4');
-    if (VF3 && AF1 && AF1.status === 'completed') {
-        const winnerAF1 = AF1.score1 > AF1.score2 ? AF1.team1 : AF1.team2;
-        VF3.team2 = winnerAF1;
-        if (VF3.status !== 'completed') VF3.status = 'geplant';
-        await VF3.save();
-    } else if (VF3 && AF1) {
-        VF3.team2 = 'Sieger AF1';
-        await VF3.save();
-    }
-    if (VF4 && AF2 && AF2.status === 'completed') {
-        const winnerAF2 = AF2.score1 > AF2.score2 ? AF2.team1 : AF2.team2;
-        VF4.team2 = winnerAF2;
-        if (VF4.status !== 'completed') VF4.status = 'geplant';
-        await VF4.save();
-    } else if (VF4 && AF2) {
-        VF4.team2 = 'Sieger AF2';
-        await VF4.save();
-    }
-    // Viertelfinale → Halbfinale
-    const VF1 = matches.find(m => m.id === 'VF1');
-    const VF2 = matches.find(m => m.id === 'VF2');
-    const HF1 = matches.find(m => m.id === 'HF1');
-    const HF2 = matches.find(m => m.id === 'HF2');
-    if (HF1) {
-        if (VF3 && VF3.status === 'completed') {
-            const winnerVF3 = VF3.score1 > VF3.score2 ? VF3.team1 : VF3.team2;
-            HF1.team1 = winnerVF3;
-        } else {
-            HF1.team1 = 'Sieger VF3';
-        }
-        if (VF1 && VF1.status === 'completed') {
-            const winnerVF1 = VF1.score1 > VF1.score2 ? VF1.team1 : VF1.team2;
-            HF1.team2 = winnerVF1;
-        } else {
-            HF1.team2 = 'Sieger VF1';
-        }
-        if (HF1.status !== 'completed') HF1.status = 'geplant';
-        await HF1.save();
-    }
-    if (HF2) {
-        if (VF4 && VF4.status === 'completed') {
-            const winnerVF4 = VF4.score1 > VF4.score2 ? VF4.team1 : VF4.team2;
-            HF2.team1 = winnerVF4;
-        } else {
-            HF2.team1 = 'Sieger VF4';
-        }
-        if (VF2 && VF2.status === 'completed') {
-            const winnerVF2 = VF2.score1 > VF2.score2 ? VF2.team1 : VF2.team2;
-            HF2.team2 = winnerVF2;
-        } else {
-            HF2.team2 = 'Sieger VF2';
-        }
-        if (HF2.status !== 'completed') HF2.status = 'geplant';
-        await HF2.save();
-    }
-    // Halbfinale → Finale
-    const F1 = matches.find(m => m.id === 'F1');
-    if (F1) {
-        if (HF1 && HF1.status === 'completed') {
-            const winnerHF1 = HF1.score1 > HF1.score2 ? HF1.team1 : HF1.team2;
-            F1.team1 = winnerHF1;
-        } else {
-            F1.team1 = 'Sieger HF1';
-        }
-        if (HF2 && HF2.status === 'completed') {
-            const winnerHF2 = HF2.score1 > HF2.score2 ? HF2.team1 : HF2.team2;
-            F1.team2 = winnerHF2;
-        } else {
-            F1.team2 = 'Sieger HF2';
-        }
-        if (F1.status !== 'completed') F1.status = 'geplant';
-        await F1.save();
-    }
-}
-// ... bestehender Code ...
+// ... existing code ...

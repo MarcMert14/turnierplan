@@ -1475,7 +1475,8 @@ async function recalculateStandingsMongo() {
     const teams = await Team.find();
     // Standings neu berechnen
     let standings = teams.map(t => ({ name: t.name, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 }));
-    matches.forEach(match => {
+    // Nur Vorrunden-/Gruppenspiele zählen!
+    matches.filter(m => m.phase === 'vorrunde').forEach(match => {
         if (typeof match.score1 === 'number' && typeof match.score2 === 'number' && match.score1 !== null && match.score2 !== null) {
             let t1 = standings.find(t => t.name === match.team1);
             let t2 = standings.find(t => t.name === match.team2);

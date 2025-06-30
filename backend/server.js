@@ -6,6 +6,7 @@ const XLSX = require('xlsx');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const mongoose = require('mongoose');
 
 const app = express();
 const PORT = 3001;
@@ -1004,91 +1005,32 @@ app.post('/api/settings/pausenzeit', requireAuth, async (req, res) => {
 });
 
 // API: Teams abrufen
-app.get('/api/teams', (req, res) => {
+app.get('/api/teams', async (req, res) => {
     try {
-        const teamsData = fs.readFileSync(TEAMS_JSON, 'utf8');
-        const teams = JSON.parse(teamsData);
+        const teams = await Team.find().sort({ _id: 1 });
         res.json(teams);
     } catch (error) {
-        console.error('Fehler beim Lesen der Teams:', error);
         res.status(500).json({ error: 'Fehler beim Laden der Teams' });
     }
 });
 
 // API: Matches abrufen
-app.get('/api/matches', (req, res) => {
+app.get('/api/matches', async (req, res) => {
     try {
-        const matchesData = fs.readFileSync(MATCHES_JSON, 'utf8');
-        const matches = JSON.parse(matchesData);
+        const matches = await Match.find();
         res.json(matches);
     } catch (error) {
-        console.error('Fehler beim Lesen der Matches:', error);
-        res.status(500).json({ error: 'Fehler beim Laden der Spiele' });
+        res.status(500).json({ error: 'Fehler beim Laden der Matches' });
     }
 });
 
 // API: Standings abrufen (jetzt gruppenbasiert für 8/9 Teams)
 app.get('/api/standings', async (req, res) => {
     try {
-        const teams = await fs.readJson(TEAMS_JSON).catch(() => []);
-        const matches = await fs.readJson(MATCHES_JSON).catch(() => ({ vorrunde: [], ko: [] }));
-        if (teams.length === 8 || teams.length === 9) {
-            // Gruppenzuordnung
-            let gruppen = {};
-            if (teams.length === 8) {
-                gruppen = { A: teams.slice(0, 4), B: teams.slice(4, 8) };
-            } else if (teams.length === 9) {
-                gruppen = { A: teams.slice(0, 3), B: teams.slice(3, 6), C: teams.slice(6, 9) };
-            }
-            // Standings pro Gruppe berechnen
-            let result = {};
-            Object.entries(gruppen).forEach(([gruppe, groupTeams]) => {
-                // Grundstruktur
-                let standings = groupTeams.map(t => ({
-                    name: t.name,
-                    played: 0,
-                    won: 0,
-                    drawn: 0,
-                    lost: 0,
-                    goalsFor: 0,
-                    goalsAgainst: 0,
-                    points: 0
-                }));
-                // Nur Vorrundenspiele dieser Gruppe berücksichtigen
-                const groupMatches = (matches.vorrunde || []).filter(m => m.round && m.round.includes(gruppe));
-                groupMatches.forEach(match => {
-                    if (typeof match.score1 === 'number' && typeof match.score2 === 'number' && match.score1 !== null && match.score2 !== null) {
-                        let t1 = standings.find(t => t.name === match.team1);
-                        let t2 = standings.find(t => t.name === match.team2);
-                        if (t1 && t2) {
-                            t1.played++; t2.played++;
-                            t1.goalsFor += match.score1; t1.goalsAgainst += match.score2;
-                            t2.goalsFor += match.score2; t2.goalsAgainst += match.score1;
-                            if (match.score1 > match.score2) { t1.won++; t1.points += 3; t2.lost++; }
-                            else if (match.score1 < match.score2) { t2.won++; t2.points += 3; t1.lost++; }
-                            else { t1.drawn++; t2.drawn++; t1.points++; t2.points++; }
-                        }
-                    }
-                });
-                // Sortierung wie gehabt
-                standings.sort((a, b) => {
-                    if (b.points !== a.points) return b.points - a.points;
-                    const diffA = a.goalsFor - a.goalsAgainst;
-                    const diffB = b.goalsFor - b.goalsAgainst;
-                    if (diffB !== diffA) return diffB - diffA;
-                    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-                    return a.name.localeCompare(b.name);
-                });
-                result[gruppe] = standings;
-            });
-            return res.json(result);
-        } else {
-            // Standard: Einzel-Tabelle
-            const standings = await fs.readJson(STANDINGS_JSON).catch(() => []);
-            return res.json(standings);
-        }
+        const standings = await Standing.find();
+        res.json(standings);
     } catch (error) {
-        res.status(500).json({ error: 'Fehler beim Laden der Rangliste' });
+        res.status(500).json({ error: 'Fehler beim Laden der Tabelle' });
     }
 });
 
@@ -1376,17 +1318,11 @@ app.post('/api/teams', requireAuth, async (req, res) => {
         return res.status(400).json({ success: false, message: 'Teamname fehlt oder ungültig' });
     }
     try {
-        let teams = await fs.readJson(TEAMS_JSON).catch(() => []);
-        if (teams.find(t => t.name === name)) {
+        const exists = await Team.findOne({ name });
+        if (exists) {
             return res.status(400).json({ success: false, message: 'Teamname existiert bereits' });
         }
-        teams.push({ name });
-        await fs.writeJson(TEAMS_JSON, teams, { spaces: 2 });
-        // Matches und Standings neu generieren
-        const matches = await generateMatches(teams);
-        await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
-        const standings = teams.map(t => ({ name: t.name, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 }));
-        await fs.writeJson(STANDINGS_JSON, standings, { spaces: 2 });
+        await Team.create({ name });
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Fehler beim Hinzufügen', error: error.message });
@@ -1397,20 +1333,40 @@ app.post('/api/teams', requireAuth, async (req, res) => {
 app.delete('/api/teams/:name', requireAuth, async (req, res) => {
     const { name } = req.params;
     try {
-        let teams = await fs.readJson(TEAMS_JSON).catch(() => []);
-        const newTeams = teams.filter(t => t.name !== name);
-        if (newTeams.length === teams.length) {
+        const result = await Team.deleteOne({ name });
+        if (result.deletedCount === 0) {
             return res.status(404).json({ success: false, message: 'Team nicht gefunden' });
         }
-        await fs.writeJson(TEAMS_JSON, newTeams, { spaces: 2 });
-        // Matches und Standings neu generieren
-        const matches = await generateMatches(newTeams);
-        await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
-        const standings = newTeams.map(t => ({ name: t.name, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 }));
-        await fs.writeJson(STANDINGS_JSON, standings, { spaces: 2 });
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Fehler beim Entfernen', error: error.message });
+    }
+});
+
+// API: Spielzeit (gameDuration) abfragen
+app.get('/api/settings/gameDuration', async (req, res) => {
+    try {
+        const setting = await Setting.findOne({ key: 'gameDuration' });
+        res.json({ value: setting ? setting.value : 8 });
+    } catch (error) {
+        res.status(500).json({ error: 'Fehler beim Laden der Spielzeit' });
+    }
+});
+
+app.post('/api/settings/gameDuration', requireAuth, async (req, res) => {
+    const { value } = req.body;
+    if (typeof value !== 'number' || value < 1) {
+        return res.status(400).json({ success: false, message: 'Ungültige Spielzeit' });
+    }
+    try {
+        await Setting.findOneAndUpdate(
+            { key: 'gameDuration' },
+            { value },
+            { upsert: true }
+        );
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Fehler beim Speichern', error: error.message });
     }
 });
 
@@ -1445,3 +1401,56 @@ fs.readJson(TEAMS_JSON).then(teams => {
     }
 });
 // ... existing code ... 
+
+// MongoDB-Verbindung
+mongoose.connect('mongodb+srv://marcm984:v6UwbqiptqxJMYRM@juxturnier.jau1q5e.mongodb.net/?retryWrites=true&w=majority&appName=Juxturnier', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => {
+    console.log('MongoDB verbunden!');
+}).catch(err => {
+    console.error('MongoDB Fehler:', err);
+});
+
+// Team-Modell
+const teamSchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true }
+});
+const Team = mongoose.model('Team', teamSchema);
+
+// Einstellungen-Modell
+const settingsSchema = new mongoose.Schema({
+    key: { type: String, required: true, unique: true },
+    value: mongoose.Schema.Types.Mixed
+});
+const Setting = mongoose.model('Setting', settingsSchema);
+
+// Match-Modell
+const matchSchema = new mongoose.Schema({
+    id: String,
+    phase: String,
+    round: String,
+    team1: String,
+    team2: String,
+    score1: Number,
+    score2: Number,
+    status: String,
+    startTime: String,
+    endTime: String,
+    gruppe: String
+});
+const Match = mongoose.model('Match', matchSchema);
+
+// Standings-Modell
+const standingSchema = new mongoose.Schema({
+    name: String,
+    played: Number,
+    won: Number,
+    drawn: Number,
+    lost: Number,
+    goalsFor: Number,
+    goalsAgainst: Number,
+    points: Number,
+    gruppe: String
+});
+const Standing = mongoose.model('Standing', standingSchema);

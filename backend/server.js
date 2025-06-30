@@ -1475,7 +1475,7 @@ async function recalculateStandingsMongo() {
         }
     });
     // Logging zur Kontrolle
-    console.log('Standings to insert:', standings);
+    console.log('Standings to insert:', JSON.stringify(standings, null, 2));
     // Standings in DB ersetzen
     await Standing.deleteMany({});
     for (const s of standings) {

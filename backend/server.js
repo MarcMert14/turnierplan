@@ -1452,11 +1452,12 @@ async function recalculateStandingsMongo() {
     matches.filter(m => m.phase === 'vorrunde' && m.round && m.round.match(/Gruppe ([A-Z])/)).forEach(m => {
         const gruppe = m.round.match(/Gruppe ([A-Z])/)[1];
         [m.team1, m.team2].forEach(teamName => {
-            gruppenMap[teamName] = gruppe;
+            gruppenMap[teamName.trim().toLowerCase()] = gruppe;
         });
     });
     standings.forEach(s => {
-        if (gruppenMap[s.name]) s.gruppe = gruppenMap[s.name];
+        const key = s.name.trim().toLowerCase();
+        if (gruppenMap[key]) s.gruppe = gruppenMap[key];
     });
     // Statistiken berechnen
     matches.filter(m => m.phase === 'vorrunde').forEach(match => {

@@ -1123,7 +1123,34 @@ app.put('/api/matches/:id', requireAuth, async (req, res) => {
         await match.save();
         // Standings aktualisieren
         await recalculateStandingsMongo();
-        // KO-Phase ggf. aktualisieren
+
+        // === NEU: KO-Phase automatisch befüllen, wenn Vorrunde/Gruppen abgeschlossen ===
+        const teams = await Team.find();
+        const allMatches = await Match.find();
+        if (teams.length === 10) {
+            // Bei 10 Teams: alle Vorrundenspiele müssen abgeschlossen sein
+            const vorrundeDone = allMatches.filter(m => m.phase === 'vorrunde').every(m => m.status === 'completed');
+            if (vorrundeDone) {
+                await updateKOMatchesMongo();
+            }
+        } else if (teams.length === 8 || teams.length === 9) {
+            // Bei 8/9 Teams: alle Gruppenspiele müssen abgeschlossen sein
+            // Gruppen werden über das Feld "round" erkannt (z.B. "Gruppe A")
+            const gruppen = Array.from(new Set(allMatches.filter(m => m.phase === 'vorrunde' && m.round && m.round.match(/Gruppe ([A-Z])/)).map(m => m.round.match(/Gruppe ([A-Z])/)[1])));
+            let allGroupsDone = true;
+            for (const gruppe of gruppen) {
+                const groupMatches = allMatches.filter(m => m.phase === 'vorrunde' && m.round && m.round.includes(gruppe));
+                if (!groupMatches.every(m => m.status === 'completed')) {
+                    allGroupsDone = false;
+                    break;
+                }
+            }
+            if (allGroupsDone && gruppen.length > 0) {
+                await updateKOMatchesMongo();
+            }
+        }
+
+        // KO-Phase ggf. weiterführen
         if (match.phase === 'ko' && match.status === 'completed') {
             await advanceKOMatchesMongo();
         }

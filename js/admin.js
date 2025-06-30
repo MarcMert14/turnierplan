@@ -250,16 +250,16 @@ class AdminManager {
             const teams = await response.json();
             
             teams.forEach(team => {
-                const teamEl = document.createElement('div');
-                teamEl.className = 'team-card';
-                teamEl.innerHTML = `
+            const teamEl = document.createElement('div');
+            teamEl.className = 'team-card';
+            teamEl.innerHTML = `
                     <h4>${team.name}</h4>
                     <button class="btn btn-danger btn-small" onclick="adminManager.removeTeam('${team.name}')">
-                        <i class="fas fa-trash"></i> Entfernen
-                    </button>
-                `;
-                teamsList.appendChild(teamEl);
-            });
+                    <i class="fas fa-trash"></i> Entfernen
+                </button>
+            `;
+            teamsList.appendChild(teamEl);
+        });
         } catch (error) {
             console.error('Fehler beim Laden der Teams:', error);
             this.showMessage('Fehler beim Laden der Teams', 'error');
@@ -286,9 +286,9 @@ class AdminManager {
             const result = await response.json();
             
             if (result.success) {
-                this.loadTeams();
-                document.getElementById('new-team-name').value = '';
-                this.showMessage(`Team "${teamName}" erfolgreich hinzugefügt!`, 'success');
+        this.loadTeams();
+        document.getElementById('new-team-name').value = '';
+        this.showMessage(`Team "${teamName}" erfolgreich hinzugefügt!`, 'success');
             } else {
                 this.showMessage(result.message || 'Fehler beim Hinzufügen des Teams', 'error');
             }
@@ -312,8 +312,8 @@ class AdminManager {
                 const result = await response.json();
                 
                 if (result.success) {
-                    this.loadTeams();
-                    this.showMessage(`Team "${teamName}" erfolgreich entfernt!`, 'success');
+                this.loadTeams();
+                this.showMessage(`Team "${teamName}" erfolgreich entfernt!`, 'success');
                 } else {
                     this.showMessage(result.message || 'Fehler beim Entfernen des Teams', 'error');
                 }
@@ -438,24 +438,24 @@ class AdminManager {
             const teams = await teamsResponse.json();
             const teamNames = teams.map(team => team.name);
             
-            const data = {
+        const data = {
                 config: { ...TOURNAMENT_CONFIG, teams: teamNames },
-                matches: window.tournamentManager.matches,
-                standings: window.tournamentManager.standings,
-                timestamp: new Date().toISOString()
-            };
+            matches: window.tournamentManager.matches,
+            standings: window.tournamentManager.standings,
+            timestamp: new Date().toISOString()
+        };
 
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `juxturnier-export-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `juxturnier-export-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
-            this.showMessage('Daten erfolgreich exportiert!', 'success');
+        this.showMessage('Daten erfolgreich exportiert!', 'success');
         } catch (error) {
             console.error('Fehler beim Exportieren:', error);
             this.showMessage('Fehler beim Exportieren der Daten', 'error');
@@ -550,11 +550,11 @@ class AdminManager {
                     const teams = await teamsResponse.json();
                     const teamNames = teams.map(team => team.name);
                     
-                    localStorage.setItem('juxturnier-data', JSON.stringify({
+                localStorage.setItem('juxturnier-data', JSON.stringify({
                         config: { ...TOURNAMENT_CONFIG, teams: teamNames },
-                        matches: window.tournamentManager.matches,
-                        standings: window.tournamentManager.standings
-                    }));
+                    matches: window.tournamentManager.matches,
+                    standings: window.tournamentManager.standings
+                }));
                 } catch (error) {
                     console.error('Fehler beim Auto-Save:', error);
                 }
@@ -578,36 +578,36 @@ class AdminManager {
             } catch (error) {
                 console.error('Error loading saved data:', error);
             }
-        }
     }
+}
 
     // Excel Import
     async setupExcelImport() {
-        const importBtn = document.getElementById('import-teams-excel');
-        const fileInput = document.getElementById('excel-file-input');
-        if (!importBtn || !fileInput) return;
+    const importBtn = document.getElementById('import-teams-excel');
+    const fileInput = document.getElementById('excel-file-input');
+    if (!importBtn || !fileInput) return;
 
-        importBtn.addEventListener('click', () => fileInput.click());
+    importBtn.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
             reader.onload = async (evt) => {
-                try {
-                    const data = new Uint8Array(evt.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    // Annahme: Teams stehen ab Zeile 4, Teamname in Spalte B (Index 1), 'Dabei?' in Spalte F (Index 5)
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-                    const teamNames = rows
-                        .slice(3)
-                        .filter(r => r[5] && r[5].toString().toLowerCase() === 'ja')
-                        .map(r => r[1])
-                        .filter(Boolean);
-                    if (teamNames.length === 0) {
-                        this.showMessage('Keine Teamnamen mit "Ja" in der Excel-Datei gefunden.', 'error');
-                        return;
-                    }
+            try {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                // Annahme: Teams stehen ab Zeile 4, Teamname in Spalte B (Index 1), 'Dabei?' in Spalte F (Index 5)
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                const teamNames = rows
+                    .slice(3)
+                    .filter(r => r[5] && r[5].toString().toLowerCase() === 'ja')
+                    .map(r => r[1])
+                    .filter(Boolean);
+                if (teamNames.length === 0) {
+                    this.showMessage('Keine Teamnamen mit "Ja" in der Excel-Datei gefunden.', 'error');
+                    return;
+                }
 
                     // Teams über die Backend-API importieren
                     // Erst alle bestehenden Teams löschen
@@ -634,17 +634,17 @@ class AdminManager {
 
                         // Teams neu laden
                         await this.loadTeams();
-                        this.showMessage('Teams und Spielplan erfolgreich aus Excel importiert!', 'success');
+                this.showMessage('Teams und Spielplan erfolgreich aus Excel importiert!', 'success');
                     } catch (error) {
                         console.error('Fehler beim Importieren der Teams:', error);
                         this.showMessage('Fehler beim Importieren der Teams', 'error');
                     }
-                } catch (err) {
-                    this.showMessage('Fehler beim Einlesen der Excel-Datei.', 'error');
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        });
+            } catch (err) {
+                this.showMessage('Fehler beim Einlesen der Excel-Datei.', 'error');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    });
     }
 
     // Teams mischen

@@ -968,9 +968,14 @@ async function shuffleTeams() {
                 body: JSON.stringify({ name: team.name })
             });
         }
+        // === NEU: Spielplan in der Datenbank neu generieren ===
+        await fetchData('reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
         // Ansicht und Spielplan neu laden
         await loadAdminData();
-        showMessage('Teams erfolgreich gemischt und gespeichert!', 'success');
+        showMessage('Teams erfolgreich gemischt, gespeichert und Spielplan neu generiert!', 'success');
     } catch (error) {
         showMessage('Fehler beim Mischen der Teams: ' + error.message, 'error');
     }

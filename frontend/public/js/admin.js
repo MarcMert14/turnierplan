@@ -913,7 +913,8 @@ function renderKOModusSwitch(teams) {
                         const response = await fetchData('ko-modus-8teams', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
                         if (response && response.success) {
                             showMessage('KO-Modus gewechselt', 'success');
-                            loadAdminData();
+                            const teams = await fetchData('teams');
+                            await loadKOMatchesAndRender(teams);
                         } else {
                             showMessage('Fehler beim Wechseln des KO-Modus', 'error');
                         }

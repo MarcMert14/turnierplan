@@ -1837,7 +1837,7 @@ app.post('/api/ko-modus-8teams', requireAuth, async (req, res) => {
 app.get('/api/ko-matches', requireAuth, async (req, res) => {
     try {
         const teams = await fs.readJson(TEAMS_JSON);
-        const settings = await fs.readJson(SETTINGS_JSON).catch(() => ({ koModus8Teams: 'viertelfinale' }));
+        const settings = await fs.readJson(SETTINGS_JSON).catch(() => ({ koModus8Teams: 'viertelfinale', spielzeit: 8, pausenzeit: 4 }));
         const matches = await fs.readJson(MATCHES_JSON);
         let koMatches = [];
         if (teams.length === 8) {
@@ -1852,19 +1852,21 @@ app.get('/api/ko-matches', requireAuth, async (req, res) => {
                 let finale = [
                     { id: 'F1', phase: 'ko', round: 'Finale', team1: 'Sieger HF1', team2: 'Sieger HF2', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null }
                 ];
-                // Zeiten/Pausen berechnen (z.B. 20min Pause vor HF1, 10min Pause vor Finale)
-                let startTime = '17:00'; // Beispielstartzeit, kann dynamisch berechnet werden
+                // Zeitberechnung: Startzeit = Ende letztes Vorrundenspiel + Pause (z.B. 20min)
+                let vorrunde = matches.vorrunde || [];
+                let lastVorrunde = vorrunde[vorrunde.length - 1];
+                let startTime = lastVorrunde && lastVorrunde.endTime ? lastVorrunde.endTime : '17:00';
                 function addMinutes(time, mins) {
                     const [h, m] = time.split(':').map(Number);
                     const d = new Date(2000, 0, 1, h, m);
                     d.setMinutes(d.getMinutes() + mins);
                     return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
                 }
-                const spielzeit = 8; // oder aus settings
+                const spielzeit = settings.spielzeit || 8;
                 const pause1 = 20, pause2 = 10;
-                halbfinale[0].startTime = addMinutes(startTime, 0);
+                halbfinale[0].startTime = addMinutes(startTime, pause1);
                 halbfinale[0].endTime = addMinutes(halbfinale[0].startTime, spielzeit);
-                halbfinale[1].startTime = addMinutes(halbfinale[0].endTime, pause1);
+                halbfinale[1].startTime = addMinutes(halbfinale[0].endTime, settings.pausenzeit || 4);
                 halbfinale[1].endTime = addMinutes(halbfinale[1].startTime, spielzeit);
                 finale[0].startTime = addMinutes(halbfinale[1].endTime, pause2);
                 finale[0].endTime = addMinutes(finale[0].startTime, spielzeit);

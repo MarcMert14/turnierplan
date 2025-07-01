@@ -674,8 +674,6 @@ async function loadAdminData() {
             }
         });
     });
-
-    renderKOModusSwitch(teams);
 }
 
 function getRoundIcon(roundName) {

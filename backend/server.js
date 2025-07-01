@@ -558,27 +558,37 @@ async function advanceKOMatches() {
         let matches = await fs.readJson(MATCHES_JSON);
         const teams = await fs.readJson(TEAMS_JSON);
     if (teams.length === 8) {
-        // Nur Finale dynamisch setzen
+        // Viertelfinale
+        const VF1 = matches.ko.find(m => m.id === 'VF1');
+        const VF2 = matches.ko.find(m => m.id === 'VF2');
+        const VF3 = matches.ko.find(m => m.id === 'VF3');
+        const VF4 = matches.ko.find(m => m.id === 'VF4');
         const HF1 = matches.ko.find(m => m.id === 'HF1');
         const HF2 = matches.ko.find(m => m.id === 'HF2');
         const F1 = matches.ko.find(m => m.id === 'F1');
+        
+        // HF1: Sieger VF1 vs Sieger VF4
+        if (HF1) {
+            HF1.team1 = (VF1 && VF1.status === 'completed') ? (VF1.score1 > VF1.score2 ? VF1.team1 : VF1.team2) : 'Sieger VF1';
+            HF1.team2 = (VF4 && VF4.status === 'completed') ? (VF4.score1 > VF4.score2 ? VF4.team1 : VF4.team2) : 'Sieger VF4';
+            if (HF1.status !== 'completed') HF1.status = 'geplant';
+        }
+        
+        // HF2: Sieger VF2 vs Sieger VF3
+        if (HF2) {
+            HF2.team1 = (VF2 && VF2.status === 'completed') ? (VF2.score1 > VF2.score2 ? VF2.team1 : VF2.team2) : 'Sieger VF2';
+            HF2.team2 = (VF3 && VF3.status === 'completed') ? (VF3.score1 > VF3.score2 ? VF3.team1 : VF3.team2) : 'Sieger VF3';
+            if (HF2.status !== 'completed') HF2.status = 'geplant';
+        }
+        
+        // Finale: Sieger HF1 vs Sieger HF2
         if (F1) {
-            if (HF1 && HF1.status === 'completed') {
-                const winnerHF1 = HF1.score1 > HF1.score2 ? HF1.team1 : HF1.team2;
-                F1.team1 = winnerHF1;
-            } else {
-                F1.team1 = 'Sieger HF1';
-            }
-            if (HF2 && HF2.status === 'completed') {
-                const winnerHF2 = HF2.score1 > HF2.score2 ? HF2.team1 : HF2.team2;
-                F1.team2 = winnerHF2;
-            } else {
-                F1.team2 = 'Sieger HF2';
-            }
+            F1.team1 = (HF1 && HF1.status === 'completed') ? (HF1.score1 > HF1.score2 ? HF1.team1 : HF1.team2) : 'Sieger HF1';
+            F1.team2 = (HF2 && HF2.status === 'completed') ? (HF2.score1 > HF2.score2 ? HF2.team1 : HF2.team2) : 'Sieger HF2';
             if (F1.status !== 'completed') F1.status = 'geplant';
         }
             
-            // Speichere aktualisierte Matches
+        // Speichere aktualisierte Matches
         await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
         return;
     }

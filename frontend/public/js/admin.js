@@ -383,6 +383,16 @@ async function loadAdminData() {
             'Halbfinale': matches.ko.filter(m => m.round && m.round.startsWith('Halbfinale')),
             'Finale': matches.ko.filter(m => m.round && m.round.startsWith('Finale'))
         };
+        // Halbfinale bei 8 Teams explizit sortieren: HF1 = Sieger VF2 vs Sieger VF3, HF2 = Sieger VF1 vs Sieger VF4
+        if (teams && teams.length === 8 && koRounds['Halbfinale'] && koRounds['Halbfinale'].length === 2) {
+            const hf = koRounds['Halbfinale'];
+            // Finde die IDs
+            const hf1 = hf.find(m => m.team1 === 'Sieger VF2' && m.team2 === 'Sieger VF3');
+            const hf2 = hf.find(m => m.team1 === 'Sieger VF1' && m.team2 === 'Sieger VF4');
+            if (hf1 && hf2) {
+                koRounds['Halbfinale'] = [hf1, hf2];
+            }
+        }
         
         Object.entries(koRounds).forEach(([roundName, roundMatches]) => {
             if (roundMatches.length > 0) {

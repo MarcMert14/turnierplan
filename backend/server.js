@@ -1584,8 +1584,12 @@ async function fillKOMatchesFromStandingsFile() {
                 if (VF2) { VF2.team1 = gruppeA[1]?.name || ''; VF2.team2 = gruppeB[2]?.name || ''; }
                 if (VF3) { VF3.team1 = gruppeB[0]?.name || ''; VF3.team2 = gruppeA[3]?.name || ''; }
                 if (VF4) { VF4.team1 = gruppeB[1]?.name || ''; VF4.team2 = gruppeA[2]?.name || ''; }
-                if (HF1) { HF1.team1 = 'Sieger VF2'; HF1.team2 = 'Sieger VF3'; }
-                if (HF2) { HF2.team1 = 'Sieger VF1'; HF2.team2 = 'Sieger VF4'; }
+                // Nur setzen, wenn noch kein VF abgeschlossen ist
+                const vfDone = [VF1, VF2, VF3, VF4].some(m => m && m.status === 'completed');
+                if (!vfDone) {
+                    if (HF1) { HF1.team1 = 'Sieger VF2'; HF1.team2 = 'Sieger VF3'; }
+                    if (HF2) { HF2.team1 = 'Sieger VF1'; HF2.team2 = 'Sieger VF4'; }
+                }
             } else {
                 // Direkt Halbfinale: 1A vs 2B, 1B vs 2A
                 if (HF1) { HF1.team1 = gruppeA[0]?.name || ''; HF1.team2 = gruppeB[1]?.name || ''; }

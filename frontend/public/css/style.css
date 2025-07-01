@@ -470,6 +470,7 @@ main {
     margin: 0;
     font-size: 1.3rem;
     font-weight: 700;
+    text-align: center;
 }
 
 .phase-info {
@@ -540,6 +541,7 @@ main {
 
 .ko-header h3 {
     color: #fff;
+    text-align: center;
 }
 
 .ko-header .phase-info {
@@ -574,6 +576,7 @@ main {
     font-size: 1.1rem;
     font-weight: 600;
     color: #fff;
+    text-align: center;
 }
 
 .ko-round-header .round-info {

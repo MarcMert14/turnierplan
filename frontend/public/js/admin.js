@@ -894,7 +894,7 @@ async function loadKOMatchesAndRender(teams) {
     let koMatches = [];
     try {
         if (teams.length === 8) {
-            const res = await fetchData('ko-matches');
+            const res = await fetchData('ko-matches?admin=1');
             if (res && res.success) {
                 koMatches = res.koMatches;
             }

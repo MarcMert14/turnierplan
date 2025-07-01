@@ -1012,8 +1012,8 @@ function renderKOModusSwitch(teams) {
             if (btn) {
                 btn.onclick = async () => {
                     try {
-                        const response = await fetch('/api/ko-modus-8teams', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-                        if (response.ok) {
+                        const response = await fetchData('ko-modus-8teams', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                        if (response && response.success) {
                             showMessage('KO-Modus gewechselt', 'success');
                             loadAdminData();
                         } else {

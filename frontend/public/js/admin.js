@@ -776,6 +776,8 @@ async function loadAdminData() {
             }
         });
     });
+
+    renderKOModusSwitch(teams);
 }
 
 function getRoundIcon(roundName) {
@@ -990,4 +992,38 @@ async function shuffleTeams() {
 }
 
 // Event-Listener für Shuffle-Button
-window.shuffleTeams = shuffleTeams; 
+window.shuffleTeams = shuffleTeams;
+
+function renderKOModusSwitch(teams) {
+    const settingsGrid = document.querySelector('.settings-grid');
+    if (settingsGrid && teams && teams.length === 8 && !document.getElementById('ko-modus-switch')) {
+        const div = document.createElement('div');
+        div.className = 'setting-card';
+        div.innerHTML = `
+            <h3>KO-Modus bei 8 Teams</h3>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <button id="ko-modus-switch" class="btn btn-primary">KO-Modus wechseln (Viertelfinale/Halbfinale)</button>
+            </div>
+            <p class="setting-description">Hier kannst du zwischen Viertelfinale und Direkt-Halbfinale umschalten. Nach dem Wechsel wird der Spielplan automatisch angepasst.</p>
+        `;
+        settingsGrid.appendChild(div);
+        setTimeout(() => {
+            const btn = document.getElementById('ko-modus-switch');
+            if (btn) {
+                btn.onclick = async () => {
+                    try {
+                        const response = await fetch('/api/ko-modus-8teams', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                        if (response.ok) {
+                            showMessage('KO-Modus gewechselt', 'success');
+                            loadAdminData();
+                        } else {
+                            showMessage('Fehler beim Wechseln des KO-Modus', 'error');
+                        }
+                    } catch (e) {
+                        showMessage('Fehler beim Wechseln des KO-Modus', 'error');
+                    }
+                };
+            }
+        }, 0);
+    }
+} 

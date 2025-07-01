@@ -477,6 +477,7 @@ main {
     font-size: 0.9rem;
     color: #666;
     font-weight: 400;
+    text-align: center;
 }
 
 .regenerate-btn {

@@ -323,17 +323,22 @@ async function updateKOMatches9Teams(standings, matches) {
                     match.team1 = gruppeB[1]?.name || '';
                     match.team2 = gruppeC[1]?.name || '';
                 }
-                if (match.id === 'HF1') {
-                    match.team1 = 'Sieger VF1';
-                    match.team2 = 'Sieger VF3';
-                }
-                if (match.id === 'HF2') {
-                    match.team1 = 'Sieger VF2';
-                    match.team2 = 'Sieger VF4';
-                }
-                if (match.id === 'F1') {
-                    match.team1 = 'Sieger HF1';
-                    match.team2 = 'Sieger HF2';
+                // Nur setzen, wenn noch kein VF abgeschlossen ist
+                const vfDone = [
+                    matches.ko.find(m => m.id === 'VF1'),
+                    matches.ko.find(m => m.id === 'VF2'),
+                    matches.ko.find(m => m.id === 'VF3'),
+                    matches.ko.find(m => m.id === 'VF4')
+                ].some(m => m && m.status === 'completed');
+                if (!vfDone) {
+                    if (match.id === 'HF1') {
+                        match.team1 = 'Sieger VF2';
+                        match.team2 = 'Sieger VF3';
+                    }
+                    if (match.id === 'HF2') {
+                        match.team1 = 'Sieger VF1';
+                        match.team2 = 'Sieger VF4';
+                    }
                 }
             });
             await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });

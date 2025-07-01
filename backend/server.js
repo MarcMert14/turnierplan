@@ -1844,33 +1844,8 @@ app.get('/api/ko-matches', requireAuth, async (req, res) => {
             if (settings.koModus8Teams === 'viertelfinale') {
                 koMatches = (matches.ko || []).filter(m => m.id.startsWith('VF') || m.id.startsWith('HF') || m.id.startsWith('F'));
             } else {
-                // Dynamisch Halbfinale/Finale erzeugen, Zeiten/Pausen passend berechnen
-                let halbfinale = [
-                    { id: 'HF1', phase: 'ko', round: 'Halbfinale 1', team1: '1. Gruppe A', team2: '2. Gruppe B', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
-                    { id: 'HF2', phase: 'ko', round: 'Halbfinale 2', team1: '1. Gruppe B', team2: '2. Gruppe A', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null }
-                ];
-                let finale = [
-                    { id: 'F1', phase: 'ko', round: 'Finale', team1: 'Sieger HF1', team2: 'Sieger HF2', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null }
-                ];
-                // Zeitberechnung: Startzeit = Ende letztes Vorrundenspiel + Pause (z.B. 20min)
-                let vorrunde = matches.vorrunde || [];
-                let lastVorrunde = vorrunde[vorrunde.length - 1];
-                let startTime = lastVorrunde && lastVorrunde.endTime ? lastVorrunde.endTime : '17:00';
-                function addMinutes(time, mins) {
-                    const [h, m] = time.split(':').map(Number);
-                    const d = new Date(2000, 0, 1, h, m);
-                    d.setMinutes(d.getMinutes() + mins);
-                    return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
-                }
-                const spielzeit = settings.spielzeit || 8;
-                const pause1 = 20, pause2 = 10;
-                halbfinale[0].startTime = addMinutes(startTime, pause1);
-                halbfinale[0].endTime = addMinutes(halbfinale[0].startTime, spielzeit);
-                halbfinale[1].startTime = addMinutes(halbfinale[0].endTime, settings.pausenzeit || 4);
-                halbfinale[1].endTime = addMinutes(halbfinale[1].startTime, spielzeit);
-                finale[0].startTime = addMinutes(halbfinale[1].endTime, pause2);
-                finale[0].endTime = addMinutes(finale[0].startTime, spielzeit);
-                koMatches = [...halbfinale, ...finale];
+                // Nur Halbfinale/Finale aus matches.json zurückgeben (inkl. Teams/Ergebnisse)
+                koMatches = (matches.ko || []).filter(m => m.id.startsWith('HF') || m.id.startsWith('F'));
             }
         } else {
             koMatches = matches.ko || [];

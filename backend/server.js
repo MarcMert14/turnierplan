@@ -1817,3 +1817,20 @@ app.post('/api/startzeit', requireAuth, async (req, res) => {
     }
 });
 // ... existing code ... 
+
+// ... existing code ...
+// API: KO-Modus bei 8 Teams umschalten
+app.post('/api/ko-modus-8teams', requireAuth, async (req, res) => {
+    try {
+        let settings = await fs.readJson(SETTINGS_JSON).catch(() => ({ koModus8Teams: 'viertelfinale' }));
+        settings.koModus8Teams = settings.koModus8Teams === 'viertelfinale' ? 'halbfinale' : 'viertelfinale';
+        await fs.writeJson(SETTINGS_JSON, settings, { spaces: 2 });
+        // Spielplan und Standings neu generieren
+        await regenerateScheduleAndStandings();
+        res.json({ success: true, koModus8Teams: settings.koModus8Teams });
+    } catch (error) {
+        console.error('Fehler beim Umschalten des KO-Modus:', error);
+        res.status(500).json({ success: false, message: 'Fehler beim Umschalten des KO-Modus', error: error.message });
+    }
+});
+// ... existing code ... 

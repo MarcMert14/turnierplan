@@ -1825,12 +1825,33 @@ app.post('/api/ko-modus-8teams', requireAuth, async (req, res) => {
         let settings = await fs.readJson(SETTINGS_JSON).catch(() => ({ koModus8Teams: 'viertelfinale' }));
         settings.koModus8Teams = settings.koModus8Teams === 'viertelfinale' ? 'halbfinale' : 'viertelfinale';
         await fs.writeJson(SETTINGS_JSON, settings, { spaces: 2 });
-        // Spielplan und Standings neu generieren
-        await regenerateScheduleAndStandings();
         res.json({ success: true, koModus8Teams: settings.koModus8Teams });
     } catch (error) {
         console.error('Fehler beim Umschalten des KO-Modus:', error);
         res.status(500).json({ success: false, message: 'Fehler beim Umschalten des KO-Modus', error: error.message });
+    }
+});
+// ... existing code ... 
+
+// ... existing code ...
+app.get('/api/ko-matches', requireAuth, async (req, res) => {
+    try {
+        const teams = await fs.readJson(TEAMS_JSON);
+        const settings = await fs.readJson(SETTINGS_JSON).catch(() => ({ koModus8Teams: 'viertelfinale' }));
+        const matches = await fs.readJson(MATCHES_JSON);
+        let koMatches = [];
+        if (teams.length === 8) {
+            if (settings.koModus8Teams === 'viertelfinale') {
+                koMatches = (matches.ko || []).filter(m => m.id.startsWith('VF') || m.id.startsWith('HF') || m.id.startsWith('F') || m.phase === 'pause');
+            } else {
+                koMatches = (matches.ko || []).filter(m => m.id.startsWith('HF') || m.id.startsWith('F') || m.phase === 'pause');
+            }
+        } else {
+            koMatches = matches.ko || [];
+        }
+        res.json({ success: true, koMatches });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Fehler beim Laden der KO-Spiele', error: error.message });
     }
 });
 // ... existing code ... 

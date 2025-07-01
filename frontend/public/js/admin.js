@@ -366,109 +366,7 @@ async function loadAdminData() {
     }
     
     // K.o.-Phase
-    if (matches.ko && matches.ko.length > 0) {
-        const koSection = document.createElement('div');
-        koSection.className = 'phase-section';
-        koSection.innerHTML = `
-            <div class="phase-header ko-header">
-                <h3>⚔️ K.o.-Phase</h3>
-                <span class="phase-info">9 Spiele • Champions League Modus</span>
-            </div>
-        `;
-        
-        // K.o.-Phase in Unterkategorien aufteilen
-        const koRounds = {
-            'Achtelfinale': matches.ko.filter(m => m.round && m.round.startsWith('Achtelfinale')),
-            'Viertelfinale': matches.ko.filter(m => m.round && m.round.startsWith('Viertelfinale')),
-            'Halbfinale': matches.ko.filter(m => m.round && m.round.startsWith('Halbfinale')),
-            'Finale': matches.ko.filter(m => m.round && m.round.startsWith('Finale'))
-        };
-        // Halbfinale bei 8 Teams explizit sortieren: HF1 = Sieger VF2 vs Sieger VF3, HF2 = Sieger VF1 vs Sieger VF4
-        if (teams && teams.length === 8 && koRounds['Halbfinale'] && koRounds['Halbfinale'].length === 2) {
-            const hf = koRounds['Halbfinale'];
-            // Finde die IDs
-            const hf1 = hf.find(m => m.team1 === 'Sieger VF2' && m.team2 === 'Sieger VF3');
-            const hf2 = hf.find(m => m.team1 === 'Sieger VF1' && m.team2 === 'Sieger VF4');
-            if (hf1 && hf2) {
-                koRounds['Halbfinale'] = [hf1, hf2];
-            }
-        }
-        
-        Object.entries(koRounds).forEach(([roundName, roundMatches]) => {
-            if (roundMatches.length > 0) {
-                const roundSection = document.createElement('div');
-                roundSection.className = 'ko-round-section';
-                roundSection.innerHTML = `
-                    <div class="ko-round-header">
-                        <h4>${getRoundIcon(roundName)} ${roundName}</h4>
-                        <span class="round-info">${roundMatches.length} Spiel${roundMatches.length > 1 ? 'e' : ''}</span>
-                    </div>
-                    <div class="admin-header">
-                        <span>Spiel</span>
-                        <span>Teams</span>
-                        <span>Ergebnis</span>
-                        <span>Startzeit</span>
-                        <span>Status</span>
-                        <span>Aktion</span>
-                    </div>
-                `;
-                
-                roundMatches.forEach(match => {
-                    if (match.phase === 'pause') {
-                        const div = document.createElement('div');
-                        div.className = 'admin-match pause-match';
-                        // Zeitfenster wie auf der Indexseite anzeigen
-                        const timeSlot = `${match.startTime || ''}${match.endTime ? ' - ' + match.endTime : ''}`;
-                        div.innerHTML = `
-                            <span class="match-info">
-                                <div class="match-id">${match.id}</div>
-                                <div class="match-round">Pause</div>
-                            </span>
-                            <span class="teams" colspan="2">${match.round || 'Pause'}</span>
-                            <span class="score-edit">-</span>
-                            <span class="time-edit">
-                                <input type="time" class="time-input" data-match="${match.id}" value="${match.startTime}" step="300">
-                            </span>
-                            <span class="status">Pause</span>
-                            <span class="action"></span>
-                        `;
-                        roundSection.appendChild(div);
-                    } else {
-                        const div = document.createElement('div');
-                        div.className = 'admin-match ko-match' + (match.status === 'completed' ? ' completed' : '');
-                        
-                        const score = match.score1 !== null && match.score2 !== null ? `${match.score1} : ${match.score2}` : '- : -';
-                        const status = match.status === 'completed' ? 'Abgeschlossen' : match.status === 'live' ? 'Läuft' : 'Geplant';
-                        
-                        div.innerHTML = `
-                            <span class="match-info">
-                                <div class="match-id">${match.id}</div>
-                                <div class="match-round">${roundName}</div>
-                            </span>
-                            <span class="teams">${getTeamName(match.team1)} vs ${getTeamName(match.team2)}</span>
-                            <span class="score-edit">
-                                <input type="number" class="score-input" data-match="${match.id}" data-team="1" value="${match.score1 !== null ? match.score1 : ''}" min="0" max="99">
-                                <span>:</span>
-                                <input type="number" class="score-input" data-match="${match.id}" data-team="2" value="${match.score2 !== null ? match.score2 : ''}" min="0" max="99">
-                            </span>
-                            <span class="time-edit">
-                                <input type="time" class="time-input" data-match="${match.id}" value="${match.startTime}" step="300">
-                            </span>
-                            <span class="status">${status}</span>
-                            <span class="action">
-                                <button class="delete-btn" data-match="${match.id}" onclick="deleteResult('${match.id}')">🗑️</button>
-                            </span>
-                        `;
-                        roundSection.appendChild(div);
-                    }
-                });
-                
-                koSection.appendChild(roundSection);
-            }
-        });
-        
-        el.appendChild(koSection);
-    }
+    await loadKOMatchesAndRender(teams);
     
     // Teams
     const teamsEl = document.getElementById('admin-teams-list');
@@ -1026,4 +924,113 @@ function renderKOModusSwitch(teams) {
             }
         }, 0);
     }
+}
+
+async function loadKOMatchesAndRender(teams) {
+    let koMatches = [];
+    try {
+        if (teams.length === 8) {
+            const res = await fetchData('ko-matches');
+            if (res && res.success) {
+                koMatches = res.koMatches;
+            }
+        } else {
+            const matches = await fetchData('matches');
+            koMatches = matches.ko || [];
+        }
+    } catch (e) {
+        // Fallback: keine KO-Spiele
+        koMatches = [];
+    }
+    renderKOSection(koMatches, teams);
+}
+
+function renderKOSection(koMatches, teams) {
+    const el = document.getElementById('admin-schedule-list');
+    // Entferne alte KO-Phasen-Abschnitte
+    const oldSections = el.querySelectorAll('.phase-section.ko-section');
+    oldSections.forEach(s => s.remove());
+    if (!koMatches || koMatches.length === 0) return;
+    const koSection = document.createElement('div');
+    koSection.className = 'phase-section ko-section';
+    koSection.innerHTML = `
+        <div class="phase-header ko-header">
+            <h3>⚔️ K.o.-Phase</h3>
+        </div>
+    `;
+    // Gruppiere nach Runden
+    const koRounds = {};
+    koMatches.forEach(m => {
+        let roundName = m.round || 'KO';
+        if (!koRounds[roundName]) koRounds[roundName] = [];
+        koRounds[roundName].push(m);
+    });
+    Object.entries(koRounds).forEach(([roundName, roundMatches]) => {
+        if (roundMatches.length > 0) {
+            const roundSection = document.createElement('div');
+            roundSection.className = 'ko-round-section';
+            roundSection.innerHTML = `
+                <div class="ko-round-header">
+                    <h4>${getRoundIcon(roundName)} ${roundName}</h4>
+                    <span class="round-info">${roundMatches.length} Spiel${roundMatches.length > 1 ? 'e' : ''}</span>
+                </div>
+                <div class="admin-header">
+                    <span>Spiel</span>
+                    <span>Teams</span>
+                    <span>Ergebnis</span>
+                    <span>Startzeit</span>
+                    <span>Status</span>
+                    <span>Aktion</span>
+                </div>
+            `;
+            roundMatches.forEach(match => {
+                if (match.phase === 'pause') {
+                    const div = document.createElement('div');
+                    div.className = 'admin-match pause-match';
+                    const timeSlot = `${match.startTime || ''}${match.endTime ? ' - ' + match.endTime : ''}`;
+                    div.innerHTML = `
+                        <span class="match-info">
+                            <div class="match-id">${match.id}</div>
+                            <div class="match-round">Pause</div>
+                        </span>
+                        <span class="teams" colspan="2">${match.round || 'Pause'}</span>
+                        <span class="score-edit">-</span>
+                        <span class="time-edit">
+                            <input type="time" class="time-input" data-match="${match.id}" value="${match.startTime}" step="300">
+                        </span>
+                        <span class="status">Pause</span>
+                        <span class="action"></span>
+                    `;
+                    roundSection.appendChild(div);
+                } else {
+                    const div = document.createElement('div');
+                    div.className = 'admin-match ko-match' + (match.status === 'completed' ? ' completed' : '');
+                    const score = match.score1 !== null && match.score2 !== null ? `${match.score1} : ${match.score2}` : '- : -';
+                    const status = match.status === 'completed' ? 'Abgeschlossen' : match.status === 'live' ? 'Läuft' : 'Geplant';
+                    div.innerHTML = `
+                        <span class="match-info">
+                            <div class="match-id">${match.id}</div>
+                            <div class="match-round">${roundName}</div>
+                        </span>
+                        <span class="teams">${match.team1} vs ${match.team2}</span>
+                        <span class="score-edit">
+                            <input type="number" class="score-input" data-match="${match.id}" data-team="1" value="${match.score1 !== null ? match.score1 : ''}" min="0" max="99">
+                            <span>:</span>
+                            <input type="number" class="score-input" data-match="${match.id}" data-team="2" value="${match.score2 !== null ? match.score2 : ''}" min="0" max="99">
+                        </span>
+                        <span class="time-edit">
+                            <input type="time" class="time-input" data-match="${match.id}" value="${match.startTime}" step="300">
+                        </span>
+                        <span class="status">${status}</span>
+                        <span class="action">
+                            <button class="delete-btn" data-match="${match.id}" onclick="deleteResult('${match.id}')">🗑️</button>
+                        </span>
+                    `;
+                    roundSection.appendChild(div);
+                }
+            });
+            koSection.appendChild(roundSection);
+        }
+    });
+    el.appendChild(koSection);
 } 

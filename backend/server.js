@@ -1318,8 +1318,8 @@ function generateVorrundeAndKO(teams) {
             { id: 'VF3', phase: 'ko', round: 'Viertelfinale 3', team1: '1. Gruppe B', team2: '4. Gruppe A', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
             { id: 'VF4', phase: 'ko', round: 'Viertelfinale 4', team1: '2. Gruppe B', team2: '3. Gruppe A', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
             { id: 'pause2', phase: 'pause', round: '10 Minuten Pause', team1: '', team2: '', status: 'pause', startTime: null, endTime: null, pauseDuration: 10 },
-            { id: 'HF1', phase: 'ko', round: 'Halbfinale 1', team1: 'Sieger VF1', team2: 'Sieger VF4', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
-            { id: 'HF2', phase: 'ko', round: 'Halbfinale 2', team1: 'Sieger VF2', team2: 'Sieger VF3', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'HF1', phase: 'ko', round: 'Halbfinale 1', team1: 'Sieger VF2', team2: 'Sieger VF3', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'HF2', phase: 'ko', round: 'Halbfinale 2', team1: 'Sieger VF1', team2: 'Sieger VF4', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
             { id: 'pause3', phase: 'pause', round: '10 Minuten Pause', team1: '', team2: '', status: 'pause', startTime: null, endTime: null, pauseDuration: 10 },
             { id: 'F1', phase: 'ko', round: 'Finale', team1: 'Sieger HF1', team2: 'Sieger HF2', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null }
         ];
@@ -1573,8 +1573,8 @@ async function fillKOMatchesFromStandingsFile() {
             if (VF2) { VF2.team1 = gruppeA[1]?.name || ''; VF2.team2 = gruppeB[2]?.name || ''; }
             if (VF3) { VF3.team1 = gruppeB[0]?.name || ''; VF3.team2 = gruppeA[3]?.name || ''; }
             if (VF4) { VF4.team1 = gruppeB[1]?.name || ''; VF4.team2 = gruppeA[2]?.name || ''; }
-            if (HF1) { HF1.team1 = 'Sieger VF1'; HF1.team2 = 'Sieger VF4'; }
-            if (HF2) { HF2.team1 = 'Sieger VF2'; HF2.team2 = 'Sieger VF3'; }
+            if (HF1) { HF1.team1 = 'Sieger VF2'; HF1.team2 = 'Sieger VF3'; }
+            if (HF2) { HF2.team1 = 'Sieger VF1'; HF2.team2 = 'Sieger VF4'; }
             if (F1) { F1.team1 = 'Sieger HF1'; F1.team2 = 'Sieger HF2'; }
         } else if (teams.length === 9) {
             // Gruppieren und sortieren (Objekt mit Gruppen)
@@ -1629,8 +1629,8 @@ async function fillKOMatchesFromStandingsFile() {
             if (VF2) { VF2.team1 = vfPairs[1].team1?.name || ''; VF2.team2 = vfPairs[1].team2?.name || ''; }
             if (VF3) { VF3.team1 = vfPairs[2].team1?.name || ''; VF3.team2 = vfPairs[2].team2?.name || ''; }
             if (VF4) { VF4.team1 = vfPairs[3].team1?.name || ''; VF4.team2 = vfPairs[3].team2?.name || ''; }
-            if (HF1) { HF1.team1 = 'Sieger VF1'; HF1.team2 = 'Sieger VF4'; }
-            if (HF2) { HF2.team1 = 'Sieger VF2'; HF2.team2 = 'Sieger VF3'; }
+            if (HF1) { HF1.team1 = 'Sieger VF2'; HF1.team2 = 'Sieger VF3'; }
+            if (HF2) { HF2.team1 = 'Sieger VF1'; HF2.team2 = 'Sieger VF4'; }
             if (F1) { F1.team1 = 'Sieger HF1'; F1.team2 = 'Sieger HF2'; }
         } else if (teams.length === 10) {
             const sorted = [...standings].sort(sortStandings);
@@ -1791,4 +1791,4 @@ app.post('/api/startzeit', requireAuth, async (req, res) => {
         res.status(500).json({ success: false, message: 'Fehler beim Setzen der Startzeit', error: error.message });
     }
 });
-// ... existing code ...
+// ... existing code ... 

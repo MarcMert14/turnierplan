@@ -279,70 +279,64 @@ async function recalculateStandings() {
 // --- KO-Logik für 9 Teams ---
 async function updateKOMatches9Teams(standings, matches) {
     try {
-    const gruppen = Object.keys(standings);
-    const gruppeA = standings['A'];
-    const gruppeB = standings['B'];
-    const gruppeC = standings['C'];
-        // Alle Teams sammeln
-        let alleTeams = [...gruppeA, ...gruppeB, ...gruppeC];
+        const gruppeA = standings['A'];
+        const gruppeB = standings['B'];
+        const gruppeC = standings['C'];
+        // Beste Dritte bestimmen
+        const dritte = [gruppeA[2], gruppeB[2], gruppeC[2]];
         // Nach Punkten, Tordifferenz, Tore sortieren
         const sortFn = (a, b) => {
-        if (b.points !== a.points) return b.points - a.points;
-        const diffA = a.goalsFor - a.goalsAgainst;
-        const diffB = b.goalsFor - b.goalsAgainst;
-        if (diffB !== diffA) return diffB - diffA;
-        if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-        return a.name.localeCompare(b.name);
+            if (b.points !== a.points) return b.points - a.points;
+            const diffA = a.goalsFor - a.goalsAgainst;
+            const diffB = b.goalsFor - b.goalsAgainst;
+            if (diffB !== diffA) return diffB - diffA;
+            if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+            return a.name.localeCompare(b.name);
         };
-        // Gruppenerste, -zweite, -dritte sortieren
-        let erste = [gruppeA[0], gruppeB[0], gruppeC[0]].sort(sortFn);
-        let zweite = [gruppeA[1], gruppeB[1], gruppeC[1]].sort(sortFn);
-        let dritte = [gruppeA[2], gruppeB[2], gruppeC[2]].sort(sortFn);
-        // 2 beste Dritte
+        // Beste Dritte: Die zwei besten Dritten
         let besteDritte = [...dritte].sort(sortFn).slice(0, 2);
         // Prüfe, ob alle Gruppenspiele abgeschlossen sind
-    const alleGruppenFertig = gruppen.every(gruppe => {
-        const groupMatches = (matches.vorrunde || []).filter(m => m.round && m.round.includes(gruppe));
-        return groupMatches.every(m => m.status === 'completed');
-    });
-    if (alleGruppenFertig) {
-            // Paarungen:
-            // VF1: Bester Erster vs. Zweitbester Dritter
-            // VF2: Zweitbester Erster vs. Bester Dritter
-            // VF3: Dritter Erster vs. Schwächster Zweiter
-            // VF4: Bester Zweiter vs. Zweitbester Zweiter
-        matches.ko.forEach(match => {
-            if (match.phase !== 'ko') return;
+        const alleGruppenFertig = ['A','B','C'].every(gruppe => {
+            const groupMatches = (matches.vorrunde || []).filter(m => m.round && m.round.includes(gruppe));
+            return groupMatches.every(m => m.status === 'completed');
+        });
+        if (alleGruppenFertig) {
+            matches.ko.forEach(match => {
+                if (match.phase !== 'ko') return;
                 if (match.id === 'VF1') {
-                    match.team1 = erste[0]?.name || '';
-                    match.team2 = besteDritte[1]?.name || '';
+                    match.team1 = gruppeA[0]?.name || '';
+                    // Bester Dritter aus Gruppe B oder C
+                    let kandidat = [gruppeB[2], gruppeC[2]].filter(t => besteDritte.includes(t)).sort(sortFn)[0];
+                    match.team2 = kandidat?.name || '';
                 }
                 if (match.id === 'VF2') {
-                    match.team1 = erste[1]?.name || '';
-                    match.team2 = besteDritte[0]?.name || '';
+                    match.team1 = gruppeB[0]?.name || '';
+                    // Bester Dritter aus Gruppe A oder C
+                    let kandidat = [gruppeA[2], gruppeC[2]].filter(t => besteDritte.includes(t)).sort(sortFn)[0];
+                    match.team2 = kandidat?.name || '';
                 }
                 if (match.id === 'VF3') {
-                    match.team1 = erste[2]?.name || '';
-                    match.team2 = zweite[2]?.name || '';
+                    match.team1 = gruppeC[0]?.name || '';
+                    match.team2 = gruppeA[1]?.name || '';
                 }
                 if (match.id === 'VF4') {
-                    match.team1 = zweite[0]?.name || '';
-                    match.team2 = zweite[1]?.name || '';
+                    match.team1 = gruppeB[1]?.name || '';
+                    match.team2 = gruppeC[1]?.name || '';
                 }
-            if (match.id === 'HF1') {
+                if (match.id === 'HF1') {
                     match.team1 = 'Sieger VF1';
-                    match.team2 = 'Sieger VF4';
-            }
-            if (match.id === 'HF2') {
-                    match.team1 = 'Sieger VF2';
                     match.team2 = 'Sieger VF3';
-            }
-            if (match.id === 'F1') {
-                match.team1 = 'Sieger HF1';
-                match.team2 = 'Sieger HF2';
-            }
-        });
-        await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+                }
+                if (match.id === 'HF2') {
+                    match.team1 = 'Sieger VF2';
+                    match.team2 = 'Sieger VF4';
+                }
+                if (match.id === 'F1') {
+                    match.team1 = 'Sieger HF1';
+                    match.team2 = 'Sieger HF2';
+                }
+            });
+            await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
         }
     } catch (error) {
         console.error('Fehler beim Update der KO-Matches für 9 Teams:', error);

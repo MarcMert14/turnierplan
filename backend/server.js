@@ -1371,8 +1371,8 @@ function generateVorrundeAndKO(teams) {
             { id: 'VF3', phase: 'ko', round: 'Viertelfinale 3', team1: '1. Gruppe C', team2: '2. Gruppe A', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
             { id: 'VF4', phase: 'ko', round: 'Viertelfinale 4', team1: '2. Gruppe B', team2: '2. Gruppe C', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
             { id: 'pause2', phase: 'pause', round: '10 Minuten Pause', team1: '', team2: '', status: 'pause', startTime: null, endTime: null, pauseDuration: 10 },
-            { id: 'HF1', phase: 'ko', round: 'Halbfinale 1', team1: 'Sieger VF1', team2: 'Sieger VF3', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
-            { id: 'HF2', phase: 'ko', round: 'Halbfinale 2', team1: 'Sieger VF2', team2: 'Sieger VF4', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'HF1', phase: 'ko', round: 'Halbfinale 1', team1: 'Sieger VF2', team2: 'Sieger VF3', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'HF2', phase: 'ko', round: 'Halbfinale 2', team1: 'Sieger VF1', team2: 'Sieger VF4', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
             { id: 'pause3', phase: 'pause', round: '10 Minuten Pause', team1: '', team2: '', status: 'pause', startTime: null, endTime: null, pauseDuration: 10 },
             { id: 'F1', phase: 'ko', round: 'Finale', team1: 'Sieger HF1', team2: 'Sieger HF2', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null }
         ];

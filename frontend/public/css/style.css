@@ -581,9 +581,9 @@ main {
 }
 
 .ko-round-header .round-info {
-    font-size: 0.8rem;
-    color: #e0e6f7;
-    font-weight: 400;
+    text-align: center;
+    width: 100%;
+    display: block;
 }
 
 .ko-round-matches {

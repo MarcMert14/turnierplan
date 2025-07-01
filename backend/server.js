@@ -663,10 +663,22 @@ async function saveSettings(newSettings) {
 // Hilfsfunktion: Spielplan fortlaufend neu berechnen (Startzeiten, Endzeiten, Pausen)
 async function recalculateMatchTimes(matches, startFromMatchId = null) {
     try {
-    let allMatches = [...matches.vorrunde, ...matches.ko];
-        // Immer ALLE Zeiten neu berechnen, unabhängig von vorhandenen Werten
+        let allMatches = [...matches.vorrunde, ...matches.ko];
         let currentTime = new Date('2025-07-05T14:00:00');
+        let startIndex = 0;
+        if (startFromMatchId) {
+            startIndex = allMatches.findIndex(m => m.id === startFromMatchId);
+            if (startIndex < 0) startIndex = 0;
+            // Hole ggf. die manuell gesetzte Startzeit
+            const manualStart = allMatches[startIndex].startTime;
+            if (manualStart) {
+                const [h, m] = manualStart.split(':').map(Number);
+                currentTime = new Date('2025-07-05T' + h.toString().padStart(2, '0') + ':' + m.toString().padStart(2, '0') + ':00');
+            }
+        }
+        // Spiele vor dem gewählten Startpunkt behalten ihre Startzeit
         for (let i = 0; i < allMatches.length; i++) {
+            if (startFromMatchId && i < startIndex) continue;
             let m = allMatches[i];
             // Pause nach Vorrunde/letztem Gruppenspiel
             if (m.phase === 'pause' && (m.id === 'pause1')) {
@@ -710,16 +722,15 @@ async function recalculateMatchTimes(matches, startFromMatchId = null) {
             }
             if (i === allMatches.length - 1) break;
             currentTime = new Date(currentTime.getTime() + PAUSENZEIT_MINUTEN * 60 * 1000);
-    }
-    matches.vorrunde = allMatches.filter(m => m.phase === 'vorrunde');
-    matches.ko = allMatches.filter(m => m.phase !== 'vorrunde');
-        
+        }
+        matches.vorrunde = allMatches.filter(m => m.phase === 'vorrunde');
+        matches.ko = allMatches.filter(m => m.phase !== 'vorrunde');
         // Speichere aktualisierte Matches
         await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
         return matches;
     } catch (error) {
         console.error('Fehler beim Neuberechnen der Spielzeiten:', error);
-    return matches;
+        return matches;
     }
 }
 

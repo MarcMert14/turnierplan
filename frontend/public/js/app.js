@@ -94,6 +94,7 @@ async function loadSchedule() {
         const teams = await teamsResponse.json();
         displaySchedule(matches, teams);
         displayCurrentAndNextMatch(matches, teams);
+        await loadKOMatchesIndex();
     } catch (error) {
         console.error('Fehler beim Laden des Spielplans:', error);
         document.getElementById('schedule-list').innerHTML = '<div class="error">Fehler beim Laden des Spielplans</div>';
@@ -109,6 +110,77 @@ async function loadStandings() {
         console.error('Fehler beim Laden der Tabelle:', error);
         document.getElementById('standings-table').innerHTML = '<div class="error">Fehler beim Laden der Tabelle</div>';
     }
+}
+
+async function loadKOMatchesIndex() {
+    try {
+        const res = await fetch(`${API_URL}/ko-matches`, { credentials: 'include' });
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.success) {
+                displayKOMatchesIndex(data.koMatches);
+                return;
+            }
+        }
+    } catch (e) {}
+    // Fallback: alte Anzeige
+    const matchesResponse = await fetch(`${API_URL}/matches`);
+    const matches = await matchesResponse.json();
+    displayKOMatchesIndex(matches.ko || []);
+}
+
+function displayKOMatchesIndex(koMatches) {
+    const el = document.getElementById('ko-phase-list');
+    if (!el) return;
+    el.innerHTML = '';
+    // Gruppiere nach KO-Runden wie im Adminbereich
+    const koRounds = {
+        'Achtelfinale': koMatches.filter(m => m.round && m.round.startsWith('Achtelfinale')),
+        'Viertelfinale': koMatches.filter(m => m.round && m.round.startsWith('Viertelfinale')),
+        'Halbfinale': koMatches.filter(m => m.round && m.round.startsWith('Halbfinale')),
+        'Finale': koMatches.filter(m => m.round && m.round.startsWith('Finale'))
+    };
+    Object.entries(koRounds).forEach(([roundName, roundMatches]) => {
+        if (roundMatches.length > 0) {
+            const roundSection = document.createElement('div');
+            roundSection.className = 'ko-round-section';
+            roundSection.innerHTML = `
+                <div class="ko-round-header">
+                    <h4>${getRoundIcon(roundName)} ${roundName}</h4>
+                    <span class="round-info">${roundMatches.length} Spiel${roundMatches.length > 1 ? 'e' : ''}</span>
+                </div>
+                <div class="ko-round-matches">
+                    <div class="schedule-list">
+                        <div class="header">
+                            <span>Runde</span>
+                            <span>Teams</span>
+                            <span>Ergebnis</span>
+                            <span>Zeit</span>
+                            <span>Status</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const matchesContainer = roundSection.querySelector('.schedule-list');
+            roundMatches.forEach(match => {
+                if (match.phase === 'pause') return;
+                const div = document.createElement('div');
+                div.className = 'match ko-match' + (match.status === 'completed' ? ' completed' : '') + (match.status === 'live' ? ' live' : '');
+                const score = match.score1 !== null && match.score2 !== null ? `${match.score1} : ${match.score2}` : '- : -';
+                const status = match.status === 'completed' ? 'Abgeschlossen' : match.status === 'live' ? 'Läuft' : 'Geplant';
+                const timeSlot = `${match.startTime} - ${match.endTime}`;
+                div.innerHTML = `
+                    <span>${match.round || match.id}</span>
+                    <span>${match.team1} vs ${match.team2}</span>
+                    <span>${score}</span>
+                    <span>${timeSlot}</span>
+                    <span>${status}</span>
+                `;
+                matchesContainer.appendChild(div);
+            });
+            el.appendChild(roundSection);
+        }
+    });
 }
 
 function displaySchedule(matches, teams = []) {

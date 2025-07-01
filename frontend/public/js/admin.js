@@ -959,13 +959,13 @@ function renderKOSection(koMatches, teams) {
             <h3>⚔️ K.o.-Phase</h3>
         </div>
     `;
-    // Gruppiere nach Runden
-    const koRounds = {};
-    koMatches.forEach(m => {
-        let roundName = m.round || 'KO';
-        if (!koRounds[roundName]) koRounds[roundName] = [];
-        koRounds[roundName].push(m);
-    });
+    // Gruppiere nach KO-Runden wie im Index
+    const koRounds = {
+        'Achtelfinale': koMatches.filter(m => m.round && m.round.startsWith('Achtelfinale')),
+        'Viertelfinale': koMatches.filter(m => m.round && m.round.startsWith('Viertelfinale')),
+        'Halbfinale': koMatches.filter(m => m.round && m.round.startsWith('Halbfinale')),
+        'Finale': koMatches.filter(m => m.round && m.round.startsWith('Finale'))
+    };
     Object.entries(koRounds).forEach(([roundName, roundMatches]) => {
         if (roundMatches.length > 0) {
             const roundSection = document.createElement('div');
@@ -985,50 +985,31 @@ function renderKOSection(koMatches, teams) {
                 </div>
             `;
             roundMatches.forEach(match => {
-                if (match.phase === 'pause') {
-                    const div = document.createElement('div');
-                    div.className = 'admin-match pause-match';
-                    const timeSlot = `${match.startTime || ''}${match.endTime ? ' - ' + match.endTime : ''}`;
-                    div.innerHTML = `
-                        <span class="match-info">
-                            <div class="match-id">${match.id}</div>
-                            <div class="match-round">Pause</div>
-                        </span>
-                        <span class="teams" colspan="2">${match.round || 'Pause'}</span>
-                        <span class="score-edit">-</span>
-                        <span class="time-edit">
-                            <input type="time" class="time-input" data-match="${match.id}" value="${match.startTime}" step="300">
-                        </span>
-                        <span class="status">Pause</span>
-                        <span class="action"></span>
-                    `;
-                    roundSection.appendChild(div);
-                } else {
-                    const div = document.createElement('div');
-                    div.className = 'admin-match ko-match' + (match.status === 'completed' ? ' completed' : '');
-                    const score = match.score1 !== null && match.score2 !== null ? `${match.score1} : ${match.score2}` : '- : -';
-                    const status = match.status === 'completed' ? 'Abgeschlossen' : match.status === 'live' ? 'Läuft' : 'Geplant';
-                    div.innerHTML = `
-                        <span class="match-info">
-                            <div class="match-id">${match.id}</div>
-                            <div class="match-round">${roundName}</div>
-                        </span>
-                        <span class="teams">${match.team1} vs ${match.team2}</span>
-                        <span class="score-edit">
-                            <input type="number" class="score-input" data-match="${match.id}" data-team="1" value="${match.score1 !== null ? match.score1 : ''}" min="0" max="99">
-                            <span>:</span>
-                            <input type="number" class="score-input" data-match="${match.id}" data-team="2" value="${match.score2 !== null ? match.score2 : ''}" min="0" max="99">
-                        </span>
-                        <span class="time-edit">
-                            <input type="time" class="time-input" data-match="${match.id}" value="${match.startTime}" step="300">
-                        </span>
-                        <span class="status">${status}</span>
-                        <span class="action">
-                            <button class="delete-btn" data-match="${match.id}" onclick="deleteResult('${match.id}')">🗑️</button>
-                        </span>
-                    `;
-                    roundSection.appendChild(div);
-                }
+                if (match.phase === 'pause') return; // Pausen ausblenden
+                const div = document.createElement('div');
+                div.className = 'admin-match ko-match' + (match.status === 'completed' ? ' completed' : '');
+                const score = match.score1 !== null && match.score2 !== null ? `${match.score1} : ${match.score2}` : '- : -';
+                const status = match.status === 'completed' ? 'Abgeschlossen' : match.status === 'live' ? 'Läuft' : 'Geplant';
+                div.innerHTML = `
+                    <span class="match-info">
+                        <div class="match-id">${match.id}</div>
+                        <div class="match-round">${roundName}</div>
+                    </span>
+                    <span class="teams">${match.team1} vs ${match.team2}</span>
+                    <span class="score-edit">
+                        <input type="number" class="score-input" data-match="${match.id}" data-team="1" value="${match.score1 !== null ? match.score1 : ''}" min="0" max="99">
+                        <span>:</span>
+                        <input type="number" class="score-input" data-match="${match.id}" data-team="2" value="${match.score2 !== null ? match.score2 : ''}" min="0" max="99">
+                    </span>
+                    <span class="time-edit">
+                        <input type="time" class="time-input" data-match="${match.id}" value="${match.startTime}" step="300">
+                    </span>
+                    <span class="status">${status}</span>
+                    <span class="action">
+                        <button class="delete-btn" data-match="${match.id}" onclick="deleteResult('${match.id}')">🗑️</button>
+                    </span>
+                `;
+                roundSection.appendChild(div);
             });
             koSection.appendChild(roundSection);
         }

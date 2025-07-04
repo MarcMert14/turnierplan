@@ -1557,9 +1557,9 @@ async function fillKOMatchesFromStandingsFile() {
         if (teams.length === 8) {
             const oldKO = matches.ko || [];
             const { ko } = generateVorrundeAndKO(teams);
-            // Übernehme Ergebnisse und Zeiten aus alten KO-Spielen, wenn Paarung (id, team1, team2) identisch ist
+            // Übernehme Ergebnisse und Zeiten aus alten KO-Spielen, wenn id identisch ist (egal welche Teams)
             ko.forEach(newMatch => {
-                const oldMatch = oldKO.find(m => m.id === newMatch.id && m.team1 === newMatch.team1 && m.team2 === newMatch.team2);
+                const oldMatch = oldKO.find(m => m.id === newMatch.id);
                 if (oldMatch) {
                     newMatch.score1 = oldMatch.score1;
                     newMatch.score2 = oldMatch.score2;

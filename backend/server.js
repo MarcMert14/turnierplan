@@ -533,25 +533,29 @@ async function updateKOMatches(standings) {
         // ... bestehende Logik für 9/10 Teams ...
         // Ergänzung für 9 Teams: KO-Phase nach Vorrunde automatisch befüllen
         if (teams.length === 9 && standings && typeof standings === 'object' && !Array.isArray(standings)) {
-            // Prüfe, ob alle Gruppenspiele abgeschlossen sind
-            const gruppen = Object.keys(standings);
-            let allGroupsCompleted = gruppen.every(gruppe => {
+            // Robuste Gruppenerkennung: erst aus Vorrundenspielen, sonst aus Standings
+            let gruppen = Array.from(new Set((matches.vorrunde || []).filter(m => m.round && m.round.match(/Gruppe ([A-Z])/)).map(m => m.round.match(/Gruppe ([A-Z])/)[1])));
+            if (gruppen.length === 0 && standings && typeof standings === 'object' && !Array.isArray(standings)) {
+                gruppen = Object.keys(standings);
+            }
+            let allGroupsDone = true;
+            for (const gruppe of gruppen) {
                 const groupMatches = (matches.vorrunde || []).filter(m => m.round && m.round.includes(gruppe));
-                return groupMatches.every(m => m.status === 'completed');
-            });
-            if (allGroupsCompleted) {
+                if (!groupMatches.every(m => m.status === 'completed')) {
+                    allGroupsDone = false;
+                    break;
+                }
+            }
+            if (allGroupsDone && gruppen.length > 0) {
                 await updateKOMatches9Teams(standings, matches);
-                // Nach dem Setzen der KO-Phase: Zeiten für alle Spiele neu berechnen
                 matches = await recalculateMatchTimesFile(matches);
                 await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
                 return;
             }
-            return;
         }
         // Ergänzung für 10 Teams: KO-Phase nach Vorrunde automatisch befüllen
         if (teams.length === 10) {
             await updateKOMatches10Teams(standings, matches);
-            // Nach dem Setzen der KO-Phase: Zeiten für alle Spiele neu berechnen
             matches = await recalculateMatchTimesFile(matches);
             await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
             return;

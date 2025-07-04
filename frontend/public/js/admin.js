@@ -797,7 +797,9 @@ async function renderKOModusSwitcher(teams) {
             if (res.success) {
                 document.getElementById('ko-modus-success').style.display = 'inline';
                 setTimeout(() => document.getElementById('ko-modus-success').style.display = 'none', 1500);
-                // KO-Phase neu laden
+                // KO-Phase sofort anpassen
+                if (typeof updateKOMatches === 'function') await updateKOMatches();
+                // KO-Phase und Ansicht neu laden
                 if (window.loadAdminData) loadAdminData();
             } else {
                 alert('Fehler beim Setzen des Modus: ' + (res.message || 'Unbekannter Fehler'));

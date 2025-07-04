@@ -555,6 +555,14 @@ async function updateKOMatches(standings) {
             }
             return;
         }
+        // Ergänzung für 10 Teams: KO-Phase nach Vorrunde automatisch befüllen
+        if (teams.length === 10) {
+            await updateKOMatches10Teams(standings, matches);
+            // Nach dem Setzen der KO-Phase: Zeiten für alle Spiele neu berechnen
+            matches = await recalculateMatchTimesFile(matches);
+            await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+            return;
+        }
     } catch (error) {
         console.error('Fehler in updateKOMatches:', error);
     }

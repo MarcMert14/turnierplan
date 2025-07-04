@@ -548,6 +548,10 @@ async function updateKOMatches(standings) {
             });
             if (allGroupsCompleted) {
                 await updateKOMatches9Teams(standings, matches);
+                // Nach dem Setzen der KO-Phase: Zeiten für alle Spiele neu berechnen
+                matches = await recalculateMatchTimesFile(matches);
+                await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+                return;
             }
             return;
         }

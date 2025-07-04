@@ -517,18 +517,19 @@ async function updateKOMatches(standings) {
                     const HF1 = matches.ko.find(m => m.id === 'HF1');
                     const HF2 = matches.ko.find(m => m.id === 'HF2');
                     const F1 = matches.ko.find(m => m.id === 'F1');
-                    if (HF1 && (!HF1.status || HF1.status === 'geplant')) {
+                    if (HF1 && (!HF1.team1 || !HF1.team2 || HF1.team1.startsWith('1.') || HF1.team2.startsWith('2.'))) {
                         HF1.team1 = gruppeA[0]?.name || '1. Gruppe A';
                         HF1.team2 = gruppeB[1]?.name || '2. Gruppe B';
                     }
-                    if (HF2 && (!HF2.status || HF2.status === 'geplant')) {
+                    if (HF2 && (!HF2.team1 || !HF2.team2 || HF2.team1.startsWith('1.') || HF2.team2.startsWith('2.'))) {
                         HF2.team1 = gruppeB[0]?.name || '1. Gruppe B';
                         HF2.team2 = gruppeA[1]?.name || '2. Gruppe A';
                     }
-                    if (F1 && (!F1.status || F1.status === 'geplant')) {
+                    if (F1 && (!F1.team1 || !F1.team2 || F1.team1.startsWith('Sieger') || F1.team2.startsWith('Sieger'))) {
                         F1.team1 = 'Sieger HF1';
                         F1.team2 = 'Sieger HF2';
                     }
+                    // Ergebnisse und Zeiten NICHT überschreiben!
                     await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
                 }
                 return;
@@ -1567,21 +1568,50 @@ async function fillKOMatchesFromStandingsFile() {
                 let VF2 = matches.ko.find(m => m.id === 'VF2');
                 let VF3 = matches.ko.find(m => m.id === 'VF3');
                 let VF4 = matches.ko.find(m => m.id === 'VF4');
-                if (VF1) { VF1.team1 = gruppeA[0]?.name || ''; VF1.team2 = gruppeB[3]?.name || ''; }
-                if (VF2) { VF2.team1 = gruppeA[1]?.name || ''; VF2.team2 = gruppeB[2]?.name || ''; }
-                if (VF3) { VF3.team1 = gruppeB[0]?.name || ''; VF3.team2 = gruppeA[3]?.name || ''; }
-                if (VF4) { VF4.team1 = gruppeB[1]?.name || ''; VF4.team2 = gruppeA[2]?.name || ''; }
-                // Nur setzen, wenn noch kein VF abgeschlossen ist
-                const vfDone = [VF1, VF2, VF3, VF4].some(m => m && m.status === 'completed');
-                if (!vfDone) {
-                    if (HF1) { HF1.team1 = 'Sieger VF2'; HF1.team2 = 'Sieger VF3'; }
-                    if (HF2) { HF2.team1 = 'Sieger VF1'; HF2.team2 = 'Sieger VF4'; }
+                if (VF1 && (!VF1.team1 || !VF1.team2 || VF1.team1.startsWith('1.') || VF1.team2.startsWith('4.'))) {
+                    VF1.team1 = gruppeA[0]?.name || '1. Gruppe A';
+                    VF1.team2 = gruppeB[3]?.name || '4. Gruppe B';
+                }
+                if (VF2 && (!VF2.team1 || !VF2.team2 || VF2.team1.startsWith('2.') || VF2.team2.startsWith('3.'))) {
+                    VF2.team1 = gruppeA[1]?.name || '2. Gruppe A';
+                    VF2.team2 = gruppeB[2]?.name || '3. Gruppe B';
+                }
+                if (VF3 && (!VF3.team1 || !VF3.team2 || VF3.team1.startsWith('1.') || VF3.team2.startsWith('4.'))) {
+                    VF3.team1 = gruppeB[0]?.name || '1. Gruppe B';
+                    VF3.team2 = gruppeA[3]?.name || '4. Gruppe A';
+                }
+                if (VF4 && (!VF4.team1 || !VF4.team2 || VF4.team1.startsWith('2.') || VF4.team2.startsWith('3.'))) {
+                    VF4.team1 = gruppeB[1]?.name || '2. Gruppe B';
+                    VF4.team2 = gruppeA[2]?.name || '3. Gruppe A';
+                }
+                if (HF1 && (!HF1.team1 || !HF1.team2 || HF1.team1.startsWith('Sieger') || HF1.team2.startsWith('Sieger'))) {
+                    HF1.team1 = 'Sieger VF2';
+                    HF1.team2 = 'Sieger VF3';
+                }
+                if (HF2 && (!HF2.team1 || !HF2.team2 || HF2.team1.startsWith('Sieger') || HF2.team2.startsWith('Sieger'))) {
+                    HF2.team1 = 'Sieger VF1';
+                    HF2.team2 = 'Sieger VF4';
+                }
+                if (F1 && (!F1.team1 || !F1.team2 || F1.team1.startsWith('Sieger') || F1.team2.startsWith('Sieger'))) {
+                    F1.team1 = 'Sieger HF1';
+                    F1.team2 = 'Sieger HF2';
                 }
             } else if (settings.koModus8Teams === 'halbfinale') {
-                if (HF1) { HF1.team1 = gruppeA[0]?.name || ''; HF1.team2 = gruppeB[1]?.name || ''; }
-                if (HF2) { HF2.team1 = gruppeB[0]?.name || ''; HF2.team2 = gruppeA[1]?.name || ''; }
-                if (F1) { F1.team1 = 'Sieger HF1'; F1.team2 = 'Sieger HF2'; }
+                if (HF1 && (!HF1.team1 || !HF1.team2 || HF1.team1.startsWith('1.') || HF1.team2.startsWith('2.'))) {
+                    HF1.team1 = gruppeA[0]?.name || '1. Gruppe A';
+                    HF1.team2 = gruppeB[1]?.name || '2. Gruppe B';
+                }
+                if (HF2 && (!HF2.team1 || !HF2.team2 || HF2.team1.startsWith('1.') || HF2.team2.startsWith('2.'))) {
+                    HF2.team1 = gruppeB[0]?.name || '1. Gruppe B';
+                    HF2.team2 = gruppeA[1]?.name || '2. Gruppe A';
+                }
+                if (F1 && (!F1.team1 || !F1.team2 || F1.team1.startsWith('Sieger') || F1.team2.startsWith('Sieger'))) {
+                    F1.team1 = 'Sieger HF1';
+                    F1.team2 = 'Sieger HF2';
+                }
             }
+            // Nach dem Setzen der KO-Phase: Zeiten für alle Spiele neu berechnen
+            matches = await recalculateMatchTimesFile(matches);
             await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
             return;
         }

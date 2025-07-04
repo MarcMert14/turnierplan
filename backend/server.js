@@ -1301,7 +1301,53 @@ function generateVorrundeAndKO(teams) {
     const n = teams.length;
     let vorrunde = [];
     let ko = [];
-    if (n === 8) {
+    // Prüfe, ob ein spezieller Modus für 8 Teams gewählt wurde
+    let settings = {};
+    try {
+        settings = require('fs').existsSync(SETTINGS_JSON) ? require('fs').readFileSync(SETTINGS_JSON, 'utf-8') : '{}';
+        settings = JSON.parse(settings);
+    } catch (e) { settings = {}; }
+    const koModus8Teams = settings.koModus8Teams || 'viertelfinale';
+    if (n === 8 && koModus8Teams === 'halbfinale') {
+        // NEUER MODUS: 2 Gruppen à 4 Teams, jeder gegen jeden in der Gruppe, nie zweimal nacheinander
+        const gruppen = [teams.slice(0, 4), teams.slice(4, 8)];
+        const gruppenNamen = ['A', 'B'];
+        // Alle Paarungen in jeder Gruppe (6 Spiele pro Gruppe)
+        const paarungen = [
+            [0, 1], [2, 3],
+            [0, 2], [1, 3],
+            [0, 3], [1, 2]
+        ];
+        // Blockweise: 2 Spiele aus A, dann 2 aus B, dann wieder A, B ...
+        for (let block = 0; block < 3; block++) {
+            for (let g = 0; g < 2; g++) {
+                for (let p = 0; p < 2; p++) {
+                    const idx = block * 2 + p;
+                    const gruppe = gruppen[g];
+                    const gruppeName = gruppenNamen[g];
+                    const [i, j] = paarungen[idx];
+                    vorrunde.push({
+                        id: `g${gruppeName}_${gruppe[i].name}_vs_${gruppe[j].name}`,
+                        phase: 'vorrunde',
+                        round: `Gruppe ${gruppeName}`,
+                        team1: gruppe[i].name,
+                        team2: gruppe[j].name,
+                        score1: null, score2: null, status: 'geplant', startTime: null, endTime: null
+                    });
+                }
+            }
+        }
+        // KO-Spiele: nur Halbfinale und Finale
+        ko = [
+            { id: 'pause1', phase: 'pause', round: '20 Minuten Pause', team1: '', team2: '', status: 'pause', startTime: null, endTime: null, pauseDuration: 20 },
+            { id: 'HF1', phase: 'ko', round: 'Halbfinale 1', team1: '1. Gruppe A', team2: '2. Gruppe B', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'HF2', phase: 'ko', round: 'Halbfinale 2', team1: '1. Gruppe B', team2: '2. Gruppe A', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null },
+            { id: 'pause2', phase: 'pause', round: '10 Minuten Pause', team1: '', team2: '', status: 'pause', startTime: null, endTime: null, pauseDuration: 10 },
+            { id: 'F1', phase: 'ko', round: 'Finale', team1: 'Sieger HF1', team2: 'Sieger HF2', score1: null, score2: null, status: 'wartend', startTime: null, endTime: null }
+        ];
+        return { vorrunde, ko };
+    }
+    if (n === 8 && koModus8Teams === 'viertelfinale') {
         // 2 Gruppen à 4 Teams
         const gruppen = [teams.slice(0, 4), teams.slice(4, 8)];
         const gruppenNamen = ['A', 'B'];
@@ -1601,12 +1647,12 @@ async function fillKOMatchesFromStandingsFile() {
                     if (HF1) { HF1.team1 = 'Sieger VF2'; HF1.team2 = 'Sieger VF3'; }
                     if (HF2) { HF2.team1 = 'Sieger VF1'; HF2.team2 = 'Sieger VF4'; }
                 }
-            } else {
-                // Direkt Halbfinale: 1A vs 2B, 1B vs 2A
+            } else if (settings.koModus8Teams === 'halbfinale') {
+                // NEUER MODUS: Halbfinale 1: 1A vs 2B, Halbfinale 2: 1B vs 2A
                 if (HF1) { HF1.team1 = gruppeA[0]?.name || ''; HF1.team2 = gruppeB[1]?.name || ''; }
                 if (HF2) { HF2.team1 = gruppeB[0]?.name || ''; HF2.team2 = gruppeA[1]?.name || ''; }
+                if (F1) { F1.team1 = 'Sieger HF1'; F1.team2 = 'Sieger HF2'; }
             }
-            if (F1) { F1.team1 = 'Sieger HF1'; F1.team2 = 'Sieger HF2'; }
         } else if (teams.length === 9) {
             // Gruppieren und sortieren (Objekt mit Gruppen)
             const gruppeA = (standings.A || []).sort(sortStandings);
@@ -1825,16 +1871,21 @@ app.post('/api/startzeit', requireAuth, async (req, res) => {
 // ... existing code ... 
 
 // ... existing code ...
-// API: KO-Modus bei 8 Teams umschalten
+// API: KO-Modus bei 8 Teams explizit setzen
 app.post('/api/ko-modus-8teams', requireAuth, async (req, res) => {
     try {
+        const { modus } = req.body;
+        const erlaubteModi = ['viertelfinale', 'halbfinale'];
         let settings = await fs.readJson(SETTINGS_JSON).catch(() => ({ koModus8Teams: 'viertelfinale' }));
-        settings.koModus8Teams = settings.koModus8Teams === 'viertelfinale' ? 'halbfinale' : 'viertelfinale';
+        if (!erlaubteModi.includes(modus)) {
+            return res.status(400).json({ success: false, message: 'Ungültiger Modus', erlaubteModi, aktuellerModus: settings.koModus8Teams });
+        }
+        settings.koModus8Teams = modus;
         await fs.writeJson(SETTINGS_JSON, settings, { spaces: 2 });
         res.json({ success: true, koModus8Teams: settings.koModus8Teams });
     } catch (error) {
-        console.error('Fehler beim Umschalten des KO-Modus:', error);
-        res.status(500).json({ success: false, message: 'Fehler beim Umschalten des KO-Modus', error: error.message });
+        console.error('Fehler beim Setzen des KO-Modus:', error);
+        res.status(500).json({ success: false, message: 'Fehler beim Setzen des KO-Modus', error: error.message });
     }
 });
 // ... existing code ... 
@@ -1864,6 +1915,18 @@ app.get('/api/ko-matches', requireAuth, async (req, res) => {
         res.json({ success: true, koMatches });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Fehler beim Laden der KO-Spiele', error: error.message });
+    }
+});
+// ... existing code ... 
+
+// ... existing code ...
+// API: Einstellungen abrufen
+app.get('/api/settings', requireAuth, async (req, res) => {
+    try {
+        const settings = await fs.readJson(SETTINGS_JSON).catch(() => ({}));
+        res.json(settings);
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Fehler beim Laden der Einstellungen', error: error.message });
     }
 });
 // ... existing code ... 

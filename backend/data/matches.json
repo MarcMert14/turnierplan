@@ -1,10 +1,10 @@
 {
   "vorrunde": [
     {
-      "id": "gA_FC Siewillja_vs_Saufsocken",
+      "id": "gA_SW Bier 1_vs_Saufsocken",
       "phase": "vorrunde",
       "round": "Gruppe A",
-      "team1": "FC Siewillja",
+      "team1": "SW Bier 1",
       "team2": "Saufsocken",
       "score1": null,
       "score2": null,
@@ -25,10 +25,10 @@
       "endTime": "14:20"
     },
     {
-      "id": "gC_SW Bier_vs_Landjugend Schmerlecke",
+      "id": "gC_SW Bier 2_vs_Landjugend Schmerlecke",
       "phase": "vorrunde",
       "round": "Gruppe C",
-      "team1": "SW Bier",
+      "team1": "SW Bier 2",
       "team2": "Landjugend Schmerlecke",
       "score1": null,
       "score2": null,
@@ -37,10 +37,10 @@
       "endTime": "14:32"
     },
     {
-      "id": "gA_FC Siewillja_vs_Die Hopfenkrieger",
+      "id": "gA_SW Bier 1_vs_Die Hopfenkrieger",
       "phase": "vorrunde",
       "round": "Gruppe A",
-      "team1": "FC Siewillja",
+      "team1": "SW Bier 1",
       "team2": "Die Hopfenkrieger",
       "score1": null,
       "score2": null,
@@ -61,10 +61,10 @@
       "endTime": "14:56"
     },
     {
-      "id": "gC_SW Bier_vs_SWO Allstars",
+      "id": "gC_SW Bier 2_vs_SWO Allstars",
       "phase": "vorrunde",
       "round": "Gruppe C",
-      "team1": "SW Bier",
+      "team1": "SW Bier 2",
       "team2": "SWO Allstars",
       "score1": null,
       "score2": null,

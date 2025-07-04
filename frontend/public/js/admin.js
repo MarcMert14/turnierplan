@@ -674,6 +674,8 @@ async function loadAdminData() {
             }
         });
     });
+
+    await renderKOModusSwitcher(teams);
 }
 
 function getRoundIcon(roundName) {
@@ -754,6 +756,57 @@ document.getElementById('pausenzeit-form').addEventListener('submit', async func
         showMessage('Fehler beim Speichern der Pausenzeit', 'error');
     }
 });
+
+// === KO-Modus-Umschalter für 8 Teams ===
+async function renderKOModusSwitcher(teams) {
+    if (teams.length !== 8) return;
+    const settingsCard = Array.from(document.querySelectorAll('.setting-card')).find(card => card.querySelector('h3') && card.querySelector('h3').textContent.includes('KO-Phase'));
+    if (!settingsCard) return;
+    let switcher = document.getElementById('ko-modus-switcher');
+    if (!switcher) {
+        switcher = document.createElement('div');
+        switcher.id = 'ko-modus-switcher';
+        switcher.style = 'margin-top: 1rem;';
+        switcher.innerHTML = `
+            <label for="ko-modus-select"><b>KO-Modus wählen:</b></label>
+            <select id="ko-modus-select">
+                <option value="viertelfinale">Viertelfinale (Standard)</option>
+                <option value="halbfinale">Halbfinale (AABB, 1A-2B, 1B-2A)</option>
+            </select>
+            <span id="ko-modus-success" style="display:none;color:green;font-size:0.9em;margin-left:1em;">Gespeichert!</span>
+        `;
+        settingsCard.appendChild(switcher);
+    }
+    // Aktuellen Modus setzen
+    const select = document.getElementById('ko-modus-select');
+    // Hole aktuellen Modus aus Backend
+    let currentModus = 'viertelfinale';
+    try {
+        const res = await fetchData('settings');
+        if (res && res.koModus8Teams) currentModus = res.koModus8Teams;
+    } catch {}
+    select.value = currentModus;
+    select.onchange = async (e) => {
+        const modus = e.target.value;
+        try {
+            const res = await fetchData('ko-modus-8teams', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ modus })
+            });
+            if (res.success) {
+                document.getElementById('ko-modus-success').style.display = 'inline';
+                setTimeout(() => document.getElementById('ko-modus-success').style.display = 'none', 1500);
+                // KO-Phase neu laden
+                if (window.loadAdminData) loadAdminData();
+            } else {
+                alert('Fehler beim Setzen des Modus: ' + (res.message || 'Unbekannter Fehler'));
+            }
+        } catch (err) {
+            alert('Fehler beim Setzen des Modus: ' + err.message);
+        }
+    };
+}
 
 // Initialisierung
 async function init() {

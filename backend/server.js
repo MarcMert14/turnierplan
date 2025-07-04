@@ -1555,7 +1555,19 @@ async function fillKOMatchesFromStandingsFile() {
         let settings = await fs.readJson(SETTINGS_JSON).catch(() => ({ koModus8Teams: 'viertelfinale' }));
         // --- NEU: Bei 8 Teams und Moduswechsel KO-Phase komplett neu generieren ---
         if (teams.length === 8) {
+            const oldKO = matches.ko || [];
             const { ko } = generateVorrundeAndKO(teams);
+            // Übernehme Ergebnisse und Zeiten aus alten KO-Spielen, wenn Paarung (id, team1, team2) identisch ist
+            ko.forEach(newMatch => {
+                const oldMatch = oldKO.find(m => m.id === newMatch.id && m.team1 === newMatch.team1 && m.team2 === newMatch.team2);
+                if (oldMatch) {
+                    newMatch.score1 = oldMatch.score1;
+                    newMatch.score2 = oldMatch.score2;
+                    newMatch.startTime = oldMatch.startTime;
+                    newMatch.endTime = oldMatch.endTime;
+                    newMatch.status = oldMatch.status;
+                }
+            });
             matches.ko = ko;
             // Die Teams in die KO-Spiele eintragen wie gehabt:
             const gruppeA = (standings.A || []).sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst) || b.goalsFor - a.goalsFor || a.name.localeCompare(b.name));

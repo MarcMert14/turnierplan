@@ -538,6 +538,19 @@ async function updateKOMatches(standings) {
             // ... bestehende Logik ...
         }
         // ... bestehende Logik für 9/10 Teams ...
+        // Ergänzung für 9 Teams: KO-Phase nach Vorrunde automatisch befüllen
+        if (teams.length === 9 && standings && typeof standings === 'object' && !Array.isArray(standings)) {
+            // Prüfe, ob alle Gruppenspiele abgeschlossen sind
+            const gruppen = Object.keys(standings);
+            let allGroupsCompleted = gruppen.every(gruppe => {
+                const groupMatches = (matches.vorrunde || []).filter(m => m.round && m.round.includes(gruppe));
+                return groupMatches.every(m => m.status === 'completed');
+            });
+            if (allGroupsCompleted) {
+                await updateKOMatches9Teams(standings, matches);
+            }
+            return;
+        }
     } catch (error) {
         console.error('Fehler in updateKOMatches:', error);
     }

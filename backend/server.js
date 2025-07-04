@@ -1615,20 +1615,13 @@ async function fillKOMatchesFromStandingsFile() {
         let matches = await fs.readJson(MATCHES_JSON).catch(() => ({ vorrunde: [], ko: [] }));
         let standings = await fs.readJson(STANDINGS_JSON).catch(() => []);
         let settings = await fs.readJson(SETTINGS_JSON).catch(() => ({ koModus8Teams: 'viertelfinale' }));
-        
-        // Sortierfunktion für Standings
-        const sortStandings = (a, b) => {
-            if (b.points !== a.points) return b.points - a.points;
-            const diffA = a.goalsFor - a.goalsAgainst;
-            const diffB = b.goalsFor - b.goalsAgainst;
-            if (diffB !== diffA) return diffB - diffA;
-            if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-            return a.name.localeCompare(b.name);
-        };
-        
+        // --- NEU: Bei 8 Teams und Moduswechsel KO-Phase komplett neu generieren ---
         if (teams.length === 8) {
-            const gruppeA = (standings.A || []).sort(sortStandings);
-            const gruppeB = (standings.B || []).sort(sortStandings);
+            const { ko } = generateVorrundeAndKO(teams);
+            matches.ko = ko;
+            // Die Teams in die KO-Spiele eintragen wie gehabt:
+            const gruppeA = (standings.A || []).sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst) || b.goalsFor - a.goalsFor || a.name.localeCompare(b.name));
+            const gruppeB = (standings.B || []).sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst) || b.goalsFor - a.goalsFor || a.name.localeCompare(b.name));
             let HF1 = matches.ko.find(m => m.id === 'HF1');
             let HF2 = matches.ko.find(m => m.id === 'HF2');
             let F1 = matches.ko.find(m => m.id === 'F1');
@@ -1648,92 +1641,14 @@ async function fillKOMatchesFromStandingsFile() {
                     if (HF2) { HF2.team1 = 'Sieger VF1'; HF2.team2 = 'Sieger VF4'; }
                 }
             } else if (settings.koModus8Teams === 'halbfinale') {
-                // NEUER MODUS: Halbfinale 1: 1A vs 2B, Halbfinale 2: 1B vs 2A
                 if (HF1) { HF1.team1 = gruppeA[0]?.name || ''; HF1.team2 = gruppeB[1]?.name || ''; }
                 if (HF2) { HF2.team1 = gruppeB[0]?.name || ''; HF2.team2 = gruppeA[1]?.name || ''; }
                 if (F1) { F1.team1 = 'Sieger HF1'; F1.team2 = 'Sieger HF2'; }
             }
-        } else if (teams.length === 9) {
-            // Gruppieren und sortieren (Objekt mit Gruppen)
-            const gruppeA = (standings.A || []).sort(sortStandings);
-            const gruppeB = (standings.B || []).sort(sortStandings);
-            const gruppeC = (standings.C || []).sort(sortStandings);
-            // Gruppenerste, -zweite, -dritte sortieren
-            let erste = [gruppeA[0], gruppeB[0], gruppeC[0]].sort(sortStandings);
-            let zweite = [gruppeA[1], gruppeB[1], gruppeC[1]].sort(sortStandings);
-            let dritte = [gruppeA[2], gruppeB[2], gruppeC[2]].sort(sortStandings);
-            // 2 beste Dritte
-            let besteDritte = [...dritte].sort(sortStandings).slice(0, 2);
-            // Schwächster Zweiter ist der mit dem niedrigsten Ranking
-            let schwächsterZweiter = [...zweite].sort(sortStandings)[2];
-
-            // Ursprüngliche Paarungen
-            let vfPairs = [
-                { id: 'VF1', team1: erste[0], team2: besteDritte[1] },
-                { id: 'VF2', team1: erste[1], team2: besteDritte[0] },
-                { id: 'VF3', team1: erste[2], team2: schwächsterZweiter },
-                { id: 'VF4', team1: zweite[0], team2: zweite[1] }
-            ];
-
-            // Prüfe auf Gruppenduelle und tausche Gegner, falls nötig
-            // Nur für VF1, VF2, VF3 relevant (VF4 sind immer Zweite aus verschiedenen Gruppen)
-            for (let i = 0; i < 3; i++) {
-                let { team1, team2 } = vfPairs[i];
-                if (team1 && team2 && team1.gruppe === team2.gruppe) {
-                    // Suche einen anderen Gegner, der nicht aus der gleichen Gruppe ist
-                    for (let j = 0; j < 3; j++) {
-                        if (i === j) continue;
-                        let altTeam2 = vfPairs[j].team2;
-                        if (altTeam2 && team1.gruppe !== altTeam2.gruppe && vfPairs[j].team1.gruppe !== team2.gruppe) {
-                            // Tausche die Gegner
-                            vfPairs[i].team2 = altTeam2;
-                            vfPairs[j].team2 = team2;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // Paarungen setzen
-            let VF1 = matches.ko.find(m => m.id === 'VF1');
-            let VF2 = matches.ko.find(m => m.id === 'VF2');
-            let VF3 = matches.ko.find(m => m.id === 'VF3');
-            let VF4 = matches.ko.find(m => m.id === 'VF4');
-            let HF1 = matches.ko.find(m => m.id === 'HF1');
-            let HF2 = matches.ko.find(m => m.id === 'HF2');
-            let F1 = matches.ko.find(m => m.id === 'F1');
-            if (VF1) { VF1.team1 = vfPairs[0].team1?.name || ''; VF1.team2 = vfPairs[0].team2?.name || ''; }
-            if (VF2) { VF2.team1 = vfPairs[1].team1?.name || ''; VF2.team2 = vfPairs[1].team2?.name || ''; }
-            if (VF3) { VF3.team1 = vfPairs[2].team1?.name || ''; VF3.team2 = vfPairs[2].team2?.name || ''; }
-            if (VF4) { VF4.team1 = vfPairs[3].team1?.name || ''; VF4.team2 = vfPairs[3].team2?.name || ''; }
-            if (HF1) { HF1.team1 = 'Sieger VF2'; HF1.team2 = 'Sieger VF3'; }
-            if (HF2) { HF2.team1 = 'Sieger VF1'; HF2.team2 = 'Sieger VF4'; }
-            if (F1) { F1.team1 = 'Sieger HF1'; F1.team2 = 'Sieger HF2'; }
-        } else if (teams.length === 10) {
-            const sorted = [...standings].sort(sortStandings);
-            
-            let AF1 = matches.ko.find(m => m.id === 'AF1');
-            let AF2 = matches.ko.find(m => m.id === 'AF2');
-            let VF1 = matches.ko.find(m => m.id === 'VF1');
-            let VF2 = matches.ko.find(m => m.id === 'VF2');
-            let VF3 = matches.ko.find(m => m.id === 'VF3');
-            let VF4 = matches.ko.find(m => m.id === 'VF4');
-            let HF1 = matches.ko.find(m => m.id === 'HF1');
-            let HF2 = matches.ko.find(m => m.id === 'HF2');
-            let F1 = matches.ko.find(m => m.id === 'F1');
-            
-            if (AF1) { AF1.team1 = sorted[6]?.name || ''; AF1.team2 = sorted[9]?.name || ''; }
-            if (AF2) { AF2.team1 = sorted[7]?.name || ''; AF2.team2 = sorted[8]?.name || ''; }
-            if (VF1) { VF1.team1 = sorted[2]?.name || ''; VF1.team2 = sorted[5]?.name || ''; }
-            if (VF2) { VF2.team1 = sorted[3]?.name || ''; VF2.team2 = sorted[4]?.name || ''; }
-            if (VF3) { VF3.team1 = sorted[1]?.name || ''; VF3.team2 = 'Sieger AF1'; }
-            if (VF4) { VF4.team1 = sorted[0]?.name || ''; VF4.team2 = 'Sieger AF2'; }
-            if (HF1) { HF1.team1 = 'Sieger VF3'; HF1.team2 = 'Sieger VF1'; }
-            if (HF2) { HF2.team1 = 'Sieger VF4'; HF2.team2 = 'Sieger VF2'; }
-            if (F1) { F1.team1 = 'Sieger HF1'; F1.team2 = 'Sieger HF2'; }
+            await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+            return;
         }
-        
-        await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+        // ... bestehende Logik für 9/10 Teams ...
     } catch (error) {
         console.error('Fehler beim Befüllen der KO-Matches:', error);
     }

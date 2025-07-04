@@ -13,76 +13,16 @@
       "endTime": "14:08"
     },
     {
-      "id": "gB_Bauwagen_vs_Inter National",
+      "id": "gA_Die Hopfenkrieger_vs_Bauwagen",
       "phase": "vorrunde",
-      "round": "Gruppe B",
-      "team1": "Bauwagen",
-      "team2": "Inter National",
+      "round": "Gruppe A",
+      "team1": "Die Hopfenkrieger",
+      "team2": "Bauwagen",
       "score1": null,
       "score2": null,
       "status": "geplant",
       "startTime": "14:12",
       "endTime": "14:20"
-    },
-    {
-      "id": "gC_SW Bier 2_vs_Landjugend Schmerlecke",
-      "phase": "vorrunde",
-      "round": "Gruppe C",
-      "team1": "SW Bier 2",
-      "team2": "Landjugend Schmerlecke",
-      "score1": null,
-      "score2": null,
-      "status": "geplant",
-      "startTime": "14:24",
-      "endTime": "14:32"
-    },
-    {
-      "id": "gA_SW Bier 1_vs_Die Hopfenkrieger",
-      "phase": "vorrunde",
-      "round": "Gruppe A",
-      "team1": "SW Bier 1",
-      "team2": "Die Hopfenkrieger",
-      "score1": null,
-      "score2": null,
-      "status": "geplant",
-      "startTime": "14:36",
-      "endTime": "14:44"
-    },
-    {
-      "id": "gB_Bauwagen_vs_Pegelclub",
-      "phase": "vorrunde",
-      "round": "Gruppe B",
-      "team1": "Bauwagen",
-      "team2": "Pegelclub",
-      "score1": null,
-      "score2": null,
-      "status": "geplant",
-      "startTime": "14:48",
-      "endTime": "14:56"
-    },
-    {
-      "id": "gC_SW Bier 2_vs_SWO Allstars",
-      "phase": "vorrunde",
-      "round": "Gruppe C",
-      "team1": "SW Bier 2",
-      "team2": "SWO Allstars",
-      "score1": null,
-      "score2": null,
-      "status": "geplant",
-      "startTime": "15:00",
-      "endTime": "15:08"
-    },
-    {
-      "id": "gA_Saufsocken_vs_Die Hopfenkrieger",
-      "phase": "vorrunde",
-      "round": "Gruppe A",
-      "team1": "Saufsocken",
-      "team2": "Die Hopfenkrieger",
-      "score1": null,
-      "score2": null,
-      "status": "geplant",
-      "startTime": "15:12",
-      "endTime": "15:20"
     },
     {
       "id": "gB_Inter National_vs_Pegelclub",
@@ -93,20 +33,116 @@
       "score1": null,
       "score2": null,
       "status": "geplant",
+      "startTime": "14:24",
+      "endTime": "14:32"
+    },
+    {
+      "id": "gB_SW Bier 2_vs_SWO Allstars",
+      "phase": "vorrunde",
+      "round": "Gruppe B",
+      "team1": "SW Bier 2",
+      "team2": "SWO Allstars",
+      "score1": null,
+      "score2": null,
+      "status": "geplant",
+      "startTime": "14:36",
+      "endTime": "14:44"
+    },
+    {
+      "id": "gA_SW Bier 1_vs_Die Hopfenkrieger",
+      "phase": "vorrunde",
+      "round": "Gruppe A",
+      "team1": "SW Bier 1",
+      "team2": "Die Hopfenkrieger",
+      "score1": null,
+      "score2": null,
+      "status": "geplant",
+      "startTime": "14:48",
+      "endTime": "14:56"
+    },
+    {
+      "id": "gA_Saufsocken_vs_Bauwagen",
+      "phase": "vorrunde",
+      "round": "Gruppe A",
+      "team1": "Saufsocken",
+      "team2": "Bauwagen",
+      "score1": null,
+      "score2": null,
+      "status": "geplant",
+      "startTime": "15:00",
+      "endTime": "15:08"
+    },
+    {
+      "id": "gB_Inter National_vs_SW Bier 2",
+      "phase": "vorrunde",
+      "round": "Gruppe B",
+      "team1": "Inter National",
+      "team2": "SW Bier 2",
+      "score1": null,
+      "score2": null,
+      "status": "geplant",
+      "startTime": "15:12",
+      "endTime": "15:20"
+    },
+    {
+      "id": "gB_Pegelclub_vs_SWO Allstars",
+      "phase": "vorrunde",
+      "round": "Gruppe B",
+      "team1": "Pegelclub",
+      "team2": "SWO Allstars",
+      "score1": null,
+      "score2": null,
+      "status": "geplant",
       "startTime": "15:24",
       "endTime": "15:32"
     },
     {
-      "id": "gC_Landjugend Schmerlecke_vs_SWO Allstars",
+      "id": "gA_Bauwagen_vs_SW Bier 1",
       "phase": "vorrunde",
-      "round": "Gruppe C",
-      "team1": "Landjugend Schmerlecke",
-      "team2": "SWO Allstars",
+      "round": "Gruppe A",
+      "team1": "Bauwagen",
+      "team2": "SW Bier 1",
       "score1": null,
       "score2": null,
       "status": "geplant",
       "startTime": "15:36",
       "endTime": "15:44"
+    },
+    {
+      "id": "gA_Saufsocken_vs_Die Hopfenkrieger",
+      "phase": "vorrunde",
+      "round": "Gruppe A",
+      "team1": "Saufsocken",
+      "team2": "Die Hopfenkrieger",
+      "score1": null,
+      "score2": null,
+      "status": "geplant",
+      "startTime": "15:48",
+      "endTime": "15:56"
+    },
+    {
+      "id": "gB_SWO Allstars_vs_Inter National",
+      "phase": "vorrunde",
+      "round": "Gruppe B",
+      "team1": "SWO Allstars",
+      "team2": "Inter National",
+      "score1": null,
+      "score2": null,
+      "status": "geplant",
+      "startTime": "16:00",
+      "endTime": "16:08"
+    },
+    {
+      "id": "gB_Pegelclub_vs_SW Bier 2",
+      "phase": "vorrunde",
+      "round": "Gruppe B",
+      "team1": "Pegelclub",
+      "team2": "SW Bier 2",
+      "score1": null,
+      "score2": null,
+      "status": "geplant",
+      "startTime": "16:12",
+      "endTime": "16:20"
     }
   ],
   "ko": [
@@ -117,8 +153,8 @@
       "team1": "",
       "team2": "",
       "status": "pause",
-      "startTime": "15:44",
-      "endTime": "16:04",
+      "startTime": "16:20",
+      "endTime": "16:40",
       "pauseDuration": 20
     },
     {
@@ -126,48 +162,48 @@
       "phase": "ko",
       "round": "Viertelfinale 1",
       "team1": "1. Gruppe A",
-      "team2": "Bester 3. Gruppe B/C",
+      "team2": "4. Gruppe B",
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "16:04",
-      "endTime": "16:12"
+      "startTime": "16:40",
+      "endTime": "16:48"
     },
     {
       "id": "VF2",
       "phase": "ko",
       "round": "Viertelfinale 2",
-      "team1": "1. Gruppe B",
-      "team2": "Bester 3. Gruppe A/C",
+      "team1": "2. Gruppe A",
+      "team2": "3. Gruppe B",
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "16:16",
-      "endTime": "16:24"
+      "startTime": "16:52",
+      "endTime": "17:00"
     },
     {
       "id": "VF3",
       "phase": "ko",
       "round": "Viertelfinale 3",
-      "team1": "1. Gruppe C",
-      "team2": "2. Gruppe A",
+      "team1": "1. Gruppe B",
+      "team2": "4. Gruppe A",
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "16:28",
-      "endTime": "16:36"
+      "startTime": "17:04",
+      "endTime": "17:12"
     },
     {
       "id": "VF4",
       "phase": "ko",
       "round": "Viertelfinale 4",
       "team1": "2. Gruppe B",
-      "team2": "2. Gruppe C",
+      "team2": "3. Gruppe A",
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "16:40",
-      "endTime": "16:48"
+      "startTime": "17:16",
+      "endTime": "17:24"
     },
     {
       "id": "pause2",
@@ -176,8 +212,8 @@
       "team1": "",
       "team2": "",
       "status": "pause",
-      "startTime": "16:48",
-      "endTime": "16:58",
+      "startTime": "17:24",
+      "endTime": "17:34",
       "pauseDuration": 10
     },
     {
@@ -189,8 +225,8 @@
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "16:58",
-      "endTime": "17:06"
+      "startTime": "17:34",
+      "endTime": "17:42"
     },
     {
       "id": "HF2",
@@ -201,8 +237,8 @@
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "17:10",
-      "endTime": "17:18"
+      "startTime": "17:46",
+      "endTime": "17:54"
     },
     {
       "id": "pause3",
@@ -211,8 +247,8 @@
       "team1": "",
       "team2": "",
       "status": "pause",
-      "startTime": "17:18",
-      "endTime": "17:28",
+      "startTime": "17:54",
+      "endTime": "18:04",
       "pauseDuration": 10
     },
     {
@@ -224,8 +260,8 @@
       "score1": null,
       "score2": null,
       "status": "wartend",
-      "startTime": "17:28",
-      "endTime": "17:36"
+      "startTime": "18:04",
+      "endTime": "18:12"
     }
   ]
 }

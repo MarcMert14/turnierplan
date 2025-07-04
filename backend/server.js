@@ -558,19 +558,20 @@ async function advanceKOMatches() {
                 const HF1 = matches.ko.find(m => m.id === 'HF1');
                 const HF2 = matches.ko.find(m => m.id === 'HF2');
                 const F1 = matches.ko.find(m => m.id === 'F1');
-                // Halbfinale befüllen, wenn beide VF abgeschlossen
-                if (HF1 && VF2 && VF2.status === 'completed' && VF3 && VF3.status === 'completed' && (HF1.team1 === 'Sieger VF2' || HF1.team2 === 'Sieger VF3')) {
-                    HF1.team1 = VF2.score1 > VF2.score2 ? VF2.team1 : VF2.team2;
-                    HF1.team2 = VF3.score1 > VF3.score2 ? VF3.team1 : VF3.team2;
+                // HF1: Sieger VF2 vs Sieger VF3
+                if (HF1) {
+                    HF1.team1 = (VF2 && VF2.status === 'completed') ? (VF2.score1 > VF2.score2 ? VF2.team1 : VF2.team2) : 'Sieger VF2';
+                    HF1.team2 = (VF3 && VF3.status === 'completed') ? (VF3.score1 > VF3.score2 ? VF3.team1 : VF3.team2) : 'Sieger VF3';
                 }
-                if (HF2 && VF1 && VF1.status === 'completed' && VF4 && VF4.status === 'completed' && (HF2.team1 === 'Sieger VF1' || HF2.team2 === 'Sieger VF4')) {
-                    HF2.team1 = VF1.score1 > VF1.score2 ? VF1.team1 : VF1.team2;
-                    HF2.team2 = VF4.score1 > VF4.score2 ? VF4.team1 : VF4.team2;
+                // HF2: Sieger VF1 vs Sieger VF4
+                if (HF2) {
+                    HF2.team1 = (VF1 && VF1.status === 'completed') ? (VF1.score1 > VF1.score2 ? VF1.team1 : VF1.team2) : 'Sieger VF1';
+                    HF2.team2 = (VF4 && VF4.status === 'completed') ? (VF4.score1 > VF4.score2 ? VF4.team1 : VF4.team2) : 'Sieger VF4';
                 }
-                // Finale befüllen, wenn beide HF abgeschlossen
-                if (F1 && HF1 && HF1.status === 'completed' && HF2 && HF2.status === 'completed' && (F1.team1 === 'Sieger HF1' || F1.team2 === 'Sieger HF2')) {
-                    F1.team1 = HF1.score1 > HF1.score2 ? HF1.team1 : HF1.team2;
-                    F1.team2 = HF2.score1 > HF2.score2 ? HF2.team1 : HF2.team2;
+                // Finale: Sieger HF1 vs Sieger HF2
+                if (F1) {
+                    F1.team1 = (HF1 && HF1.status === 'completed') ? (HF1.score1 > HF1.score2 ? HF1.team1 : HF1.team2) : 'Sieger HF1';
+                    F1.team2 = (HF2 && HF2.status === 'completed') ? (HF2.score1 > HF2.score2 ? HF2.team1 : HF2.team2) : 'Sieger HF2';
                 }
                 await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
                 return;
@@ -580,10 +581,10 @@ async function advanceKOMatches() {
                 const HF1 = matches.ko.find(m => m.id === 'HF1');
                 const HF2 = matches.ko.find(m => m.id === 'HF2');
                 const F1 = matches.ko.find(m => m.id === 'F1');
-                // Finale befüllen, wenn beide HF abgeschlossen
-                if (F1 && HF1 && HF1.status === 'completed' && HF2 && HF2.status === 'completed' && (F1.team1 === 'Sieger HF1' || F1.team2 === 'Sieger HF2')) {
-                    F1.team1 = HF1.score1 > HF1.score2 ? HF1.team1 : HF1.team2;
-                    F1.team2 = HF2.score1 > HF2.score2 ? HF2.team1 : HF2.team2;
+                // Finale: Sieger HF1 vs Sieger HF2
+                if (F1) {
+                    F1.team1 = (HF1 && HF1.status === 'completed') ? (HF1.score1 > HF1.score2 ? HF1.team1 : HF1.team2) : 'Sieger HF1';
+                    F1.team2 = (HF2 && HF2.status === 'completed') ? (HF2.score1 > HF2.score2 ? HF2.team1 : HF2.team2) : 'Sieger HF2';
                 }
                 await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
                 return;

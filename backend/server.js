@@ -351,61 +351,54 @@ async function updateKOMatches9Teams(standings, matches) {
 // --- KO-Logik für 10 Teams ---
 async function updateKOMatches10Teams(standings, matches) {
     try {
-    // Prüfe, ob alle Vorrundenspiele abgeschlossen sind UND ob die KO-Teams noch Platzhalter sind
-    const alleVorrundeFertig = (matches.vorrunde || []).every(m => m.status === 'completed');
-    if (alleVorrundeFertig) {
-        // Sortiere Standings nach Punkten, Tordifferenz, Tore
-        const sorted = [...standings].sort((a, b) => {
-            if (b.points !== a.points) return b.points - a.points;
-            const diffA = a.goalsFor - a.goalsAgainst;
-            const diffB = b.goalsFor - b.goalsAgainst;
-            if (diffB !== diffA) return diffB - diffA;
-            if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-            return a.name.localeCompare(b.name);
-        });
-        // Achtelfinale, Viertelfinale, Halbfinale, Finale setzen
-        matches.ko.forEach(match => {
-            if (match.phase !== 'ko') return;
-            if (match.id === 'AF1' && match.team1.startsWith('Platz')) {
-                match.team1 = sorted[6]?.name || 'Platz 7';
-                match.team2 = sorted[9]?.name || 'Platz 10';
-            }
-            if (match.id === 'AF2' && match.team1.startsWith('Platz')) {
-                match.team1 = sorted[7]?.name || 'Platz 8';
-                match.team2 = sorted[8]?.name || 'Platz 9';
-            }
-            if (match.id === 'VF1' && match.team1.startsWith('Platz')) {
-                match.team1 = sorted[2]?.name || 'Platz 3';
-                match.team2 = sorted[5]?.name || 'Platz 6';
-            }
-            if (match.id === 'VF2' && match.team1.startsWith('Platz')) {
-                match.team1 = sorted[3]?.name || 'Platz 4';
-                match.team2 = sorted[4]?.name || 'Platz 5';
-            }
-            if (match.id === 'VF3') {
-                match.team1 = sorted[1]?.name || 'Platz 2';
-                // team2 wird durch Sieger AF1 ersetzt
-            }
-            if (match.id === 'VF4') {
-                match.team1 = sorted[0]?.name || 'Platz 1';
-                // team2 wird durch Sieger AF2 ersetzt
-            }
-            if (match.id === 'HF1') {
-                // team1 wird durch Sieger VF3 ersetzt
-                // team2 wird durch Sieger VF1 ersetzt
-            }
-            if (match.id === 'HF2') {
-                // team1 wird durch Sieger VF4 ersetzt
-                // team2 wird durch Sieger VF2 ersetzt
-            }
-            if (match.id === 'F1') {
-                match.team1 = 'Sieger HF1';
-                match.team2 = 'Sieger HF2';
-            }
-        });
-            
-            // Speichere aktualisierte Matches
-        await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+        const alleVorrundeFertig = (matches.vorrunde || []).every(m => m.status === 'completed');
+        if (alleVorrundeFertig) {
+            const sorted = [...standings].sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                const diffA = a.goalsFor - a.goalsAgainst;
+                const diffB = b.goalsFor - b.goalsAgainst;
+                if (diffB !== diffA) return diffB - diffA;
+                if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+                return a.name.localeCompare(b.name);
+            });
+            matches.ko.forEach(match => {
+                if (match.phase !== 'ko') return;
+                if (match.id === 'AF1') {
+                    match.team1 = sorted[6]?.name || 'Platz 7';
+                    match.team2 = sorted[9]?.name || 'Platz 10';
+                }
+                if (match.id === 'AF2') {
+                    match.team1 = sorted[7]?.name || 'Platz 8';
+                    match.team2 = sorted[8]?.name || 'Platz 9';
+                }
+                if (match.id === 'VF1') {
+                    match.team1 = sorted[2]?.name || 'Platz 3';
+                    match.team2 = sorted[5]?.name || 'Platz 6';
+                }
+                if (match.id === 'VF2') {
+                    match.team1 = sorted[3]?.name || 'Platz 4';
+                    match.team2 = sorted[4]?.name || 'Platz 5';
+                }
+                if (match.id === 'VF3') {
+                    match.team1 = sorted[1]?.name || 'Platz 2';
+                }
+                if (match.id === 'VF4') {
+                    match.team1 = sorted[0]?.name || 'Platz 1';
+                }
+                if (match.id === 'HF1') {
+                    // team1 wird durch Sieger VF3 ersetzt
+                    // team2 wird durch Sieger VF1 ersetzt
+                }
+                if (match.id === 'HF2') {
+                    // team1 wird durch Sieger VF4 ersetzt
+                    // team2 wird durch Sieger VF2 ersetzt
+                }
+                if (match.id === 'F1') {
+                    match.team1 = 'Sieger HF1';
+                    match.team2 = 'Sieger HF2';
+                }
+            });
+            await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
         }
     } catch (error) {
         console.error('Fehler beim Update der KO-Matches für 10 Teams:', error);

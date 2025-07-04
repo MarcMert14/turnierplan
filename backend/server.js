@@ -305,13 +305,11 @@ async function updateKOMatches9Teams(standings, matches) {
                 if (match.phase !== 'ko') return;
                 if (match.id === 'VF1') {
                     match.team1 = gruppeA[0]?.name || '';
-                    // Bester Dritter aus Gruppe B oder C
                     let kandidat = [gruppeB[2], gruppeC[2]].filter(t => besteDritte.includes(t)).sort(sortFn)[0];
                     match.team2 = kandidat?.name || '';
                 }
                 if (match.id === 'VF2') {
                     match.team1 = gruppeB[0]?.name || '';
-                    // Bester Dritter aus Gruppe A oder C
                     let kandidat = [gruppeA[2], gruppeC[2]].filter(t => besteDritte.includes(t)).sort(sortFn)[0];
                     match.team2 = kandidat?.name || '';
                 }
@@ -331,6 +329,10 @@ async function updateKOMatches9Teams(standings, matches) {
                     match.team1 = 'Sieger VF1';
                     match.team2 = 'Sieger VF4';
                 }
+                if (match.id === 'F1') {
+                    match.team1 = 'Sieger HF1';
+                    match.team2 = 'Sieger HF2';
+                }
             });
             await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
         }
@@ -338,7 +340,35 @@ async function updateKOMatches9Teams(standings, matches) {
         console.error('Fehler beim Update der KO-Matches für 9 Teams:', error);
     }
 }
-// ... existing code ...
+
+async function advanceKOMatches9Teams(matches) {
+    try {
+        // Viertelfinale → Halbfinale
+        const VF1 = matches.ko.find(m => m.id === 'VF1');
+        const VF2 = matches.ko.find(m => m.id === 'VF2');
+        const VF3 = matches.ko.find(m => m.id === 'VF3');
+        const VF4 = matches.ko.find(m => m.id === 'VF4');
+        const HF1 = matches.ko.find(m => m.id === 'HF1');
+        const HF2 = matches.ko.find(m => m.id === 'HF2');
+        const F1 = matches.ko.find(m => m.id === 'F1');
+        if (HF1) {
+            HF1.team1 = (VF2 && VF2.status === 'completed') ? (VF2.score1 > VF2.score2 ? VF2.team1 : VF2.team2) : 'Sieger VF2';
+            HF1.team2 = (VF3 && VF3.status === 'completed') ? (VF3.score1 > VF3.score2 ? VF3.team1 : VF3.team2) : 'Sieger VF3';
+        }
+        if (HF2) {
+            HF2.team1 = (VF1 && VF1.status === 'completed') ? (VF1.score1 > VF1.score2 ? VF1.team1 : VF1.team2) : 'Sieger VF1';
+            HF2.team2 = (VF4 && VF4.status === 'completed') ? (VF4.score1 > VF4.score2 ? VF4.team1 : VF4.team2) : 'Sieger VF4';
+        }
+        if (F1) {
+            F1.team1 = (HF1 && HF1.status === 'completed') ? (HF1.score1 > HF1.score2 ? HF1.team1 : HF1.team2) : 'Sieger HF1';
+            F1.team2 = (HF2 && HF2.status === 'completed') ? (HF2.score1 > HF2.score2 ? HF2.team1 : HF2.team2) : 'Sieger HF2';
+        }
+        await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+    } catch (error) {
+        console.error('Fehler beim Advance der KO-Matches für 9 Teams:', error);
+    }
+}
+
 // --- KO-Logik für 10 Teams ---
 async function updateKOMatches10Teams(standings, matches) {
     try {
@@ -377,12 +407,12 @@ async function updateKOMatches10Teams(standings, matches) {
                     match.team1 = sorted[0]?.name || 'Platz 1';
                 }
                 if (match.id === 'HF1') {
-                    // team1 wird durch Sieger VF3 ersetzt
-                    // team2 wird durch Sieger VF1 ersetzt
+                    match.team1 = 'Sieger VF3';
+                    match.team2 = 'Sieger VF1';
                 }
                 if (match.id === 'HF2') {
-                    // team1 wird durch Sieger VF4 ersetzt
-                    // team2 wird durch Sieger VF2 ersetzt
+                    match.team1 = 'Sieger VF4';
+                    match.team2 = 'Sieger VF2';
                 }
                 if (match.id === 'F1') {
                     match.team1 = 'Sieger HF1';
@@ -398,85 +428,83 @@ async function updateKOMatches10Teams(standings, matches) {
 
 async function advanceKOMatches10Teams(matches) {
     try {
-    // Achtelfinale → Viertelfinale
-    const AF1 = matches.ko.find(m => m.id === 'AF1');
-    const AF2 = matches.ko.find(m => m.id === 'AF2');
-    const VF3 = matches.ko.find(m => m.id === 'VF3');
-    const VF4 = matches.ko.find(m => m.id === 'VF4');
-    if (VF3 && AF1 && AF1.status === 'completed') {
-        const winnerAF1 = AF1.score1 > AF1.score2 ? AF1.team1 : AF1.team2;
-        VF3.team2 = winnerAF1;
-        if (VF3.status !== 'completed') VF3.status = 'geplant';
-    } else if (VF3 && AF1) {
-        VF3.team2 = 'Sieger AF1';
-    }
-    if (VF4 && AF2 && AF2.status === 'completed') {
-        const winnerAF2 = AF2.score1 > AF2.score2 ? AF2.team1 : AF2.team2;
-        VF4.team2 = winnerAF2;
-        if (VF4.status !== 'completed') VF4.status = 'geplant';
-    } else if (VF4 && AF2) {
-        VF4.team2 = 'Sieger AF2';
-    }
-    // Viertelfinale → Halbfinale
-    const VF1 = matches.ko.find(m => m.id === 'VF1');
-    const VF2 = matches.ko.find(m => m.id === 'VF2');
-    const HF1 = matches.ko.find(m => m.id === 'HF1');
-    const HF2 = matches.ko.find(m => m.id === 'HF2');
-    if (HF1) {
-        if (VF3 && VF3.status === 'completed') {
-            const winnerVF3 = VF3.score1 > VF3.score2 ? VF3.team1 : VF3.team2;
-            HF1.team1 = winnerVF3;
-        } else {
-            HF1.team1 = 'Sieger VF3';
+        // Achtelfinale → Viertelfinale
+        const AF1 = matches.ko.find(m => m.id === 'AF1');
+        const AF2 = matches.ko.find(m => m.id === 'AF2');
+        const VF3 = matches.ko.find(m => m.id === 'VF3');
+        const VF4 = matches.ko.find(m => m.id === 'VF4');
+        if (VF3 && AF1 && AF1.status === 'completed') {
+            const winnerAF1 = AF1.score1 > AF1.score2 ? AF1.team1 : AF1.team2;
+            VF3.team2 = winnerAF1;
+            if (VF3.status !== 'completed') VF3.status = 'geplant';
+        } else if (VF3 && AF1) {
+            VF3.team2 = 'Sieger AF1';
         }
-        if (VF1 && VF1.status === 'completed') {
-            const winnerVF1 = VF1.score1 > VF1.score2 ? VF1.team1 : VF1.team2;
-            HF1.team2 = winnerVF1;
-        } else {
-            HF1.team2 = 'Sieger VF1';
+        if (VF4 && AF2 && AF2.status === 'completed') {
+            const winnerAF2 = AF2.score1 > AF2.score2 ? AF2.team1 : AF2.team2;
+            VF4.team2 = winnerAF2;
+            if (VF4.status !== 'completed') VF4.status = 'geplant';
+        } else if (VF4 && AF2) {
+            VF4.team2 = 'Sieger AF2';
         }
-        if (HF1.status !== 'completed') HF1.status = 'geplant';
-    }
-    if (HF2) {
-        if (VF4 && VF4.status === 'completed') {
-            const winnerVF4 = VF4.score1 > VF4.score2 ? VF4.team1 : VF4.team2;
-            HF2.team1 = winnerVF4;
-        } else {
-            HF2.team1 = 'Sieger VF4';
+        // Viertelfinale → Halbfinale
+        const VF1 = matches.ko.find(m => m.id === 'VF1');
+        const VF2 = matches.ko.find(m => m.id === 'VF2');
+        const HF1 = matches.ko.find(m => m.id === 'HF1');
+        const HF2 = matches.ko.find(m => m.id === 'HF2');
+        if (HF1) {
+            if (VF3 && VF3.status === 'completed') {
+                const winnerVF3 = VF3.score1 > VF3.score2 ? VF3.team1 : VF3.team2;
+                HF1.team1 = winnerVF3;
+            } else {
+                HF1.team1 = 'Sieger VF3';
+            }
+            if (VF1 && VF1.status === 'completed') {
+                const winnerVF1 = VF1.score1 > VF1.score2 ? VF1.team1 : VF1.team2;
+                HF1.team2 = winnerVF1;
+            } else {
+                HF1.team2 = 'Sieger VF1';
+            }
+            if (HF1.status !== 'completed') HF1.status = 'geplant';
         }
-        if (VF2 && VF2.status === 'completed') {
-            const winnerVF2 = VF2.score1 > VF2.score2 ? VF2.team1 : VF2.team2;
-            HF2.team2 = winnerVF2;
-        } else {
-            HF2.team2 = 'Sieger VF2';
+        if (HF2) {
+            if (VF4 && VF4.status === 'completed') {
+                const winnerVF4 = VF4.score1 > VF4.score2 ? VF4.team1 : VF4.team2;
+                HF2.team1 = winnerVF4;
+            } else {
+                HF2.team1 = 'Sieger VF4';
+            }
+            if (VF2 && VF2.status === 'completed') {
+                const winnerVF2 = VF2.score1 > VF2.score2 ? VF2.team1 : VF2.team2;
+                HF2.team2 = winnerVF2;
+            } else {
+                HF2.team2 = 'Sieger VF2';
+            }
+            if (HF2.status !== 'completed') HF2.status = 'geplant';
         }
-        if (HF2.status !== 'completed') HF2.status = 'geplant';
-    }
-    // Halbfinale → Finale
-    const F1 = matches.ko.find(m => m.id === 'F1');
-    if (F1) {
-        if (HF1 && HF1.status === 'completed') {
-            const winnerHF1 = HF1.score1 > HF1.score2 ? HF1.team1 : HF1.team2;
-            F1.team1 = winnerHF1;
-        } else {
-            F1.team1 = 'Sieger HF1';
+        // Halbfinale → Finale
+        const F1 = matches.ko.find(m => m.id === 'F1');
+        if (F1) {
+            if (HF1 && HF1.status === 'completed') {
+                const winnerHF1 = HF1.score1 > HF1.score2 ? HF1.team1 : HF1.team2;
+                F1.team1 = winnerHF1;
+            } else {
+                F1.team1 = 'Sieger HF1';
+            }
+            if (HF2 && HF2.status === 'completed') {
+                const winnerHF2 = HF2.score1 > HF2.score2 ? HF2.team1 : HF2.team2;
+                F1.team2 = winnerHF2;
+            } else {
+                F1.team2 = 'Sieger HF2';
+            }
+            if (F1.status !== 'completed') F1.status = 'geplant';
         }
-        if (HF2 && HF2.status === 'completed') {
-            const winnerHF2 = HF2.score1 > HF2.score2 ? HF2.team1 : HF2.team2;
-            F1.team2 = winnerHF2;
-        } else {
-            F1.team2 = 'Sieger HF2';
-        }
-        if (F1.status !== 'completed') F1.status = 'geplant';
-    }
-        
-        // Speichere aktualisierte Matches
-    await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
+        await fs.writeJson(MATCHES_JSON, matches, { spaces: 2 });
     } catch (error) {
         console.error('Fehler beim Advance der KO-Matches für 10 Teams:', error);
     }
 }
-// ... existing code ...
+
 // updateKOMatches: jetzt getrennt für 8, 9, 10 Teams
 async function updateKOMatches(standings) {
     try {
@@ -634,7 +662,6 @@ async function advanceKOMatches() {
         console.error('Fehler in advanceKOMatches:', error);
     }
 }
-// ... existing code ...
 
 // Hilfsfunktion: Spielzeit und Pausenzeit laden
 async function loadSettings() {
